@@ -220,8 +220,8 @@ namespace Vent.Test
 
             Assert.IsTrue(store.Mutations.Count() == 2);
             // head and two versions
-            Assert.IsTrue(store.Where(e => e is PropertyEntity<string>).Count() == 3);
-            Assert.IsTrue(store.Where(e => e is VersionInfo).Count() == 1);
+            Assert.IsTrue(store.Where(kvp => kvp.Value is PropertyEntity<string>).Count() == 3);
+            Assert.IsTrue(store.Where(kvp => kvp.Value is VersionInfo).Count() == 1);
         }
 
         // check if the mutations cut off after the max history count
@@ -328,7 +328,7 @@ namespace Vent.Test
             Assert.IsTrue(store.EntitiesInScope == 4);
             Assert.IsTrue(ent.Value == "tun");
 
-            var versionInfo = (VersionInfo)store.First(e => e is VersionInfo);
+            var versionInfo = (VersionInfo)store.First(e => e.Value is VersionInfo).Value;
 
             Assert.IsTrue(versionInfo.HeadId == ent.Id);
             Assert.IsTrue(versionInfo.Versions.Count == 1);
@@ -376,7 +376,7 @@ namespace Vent.Test
             Assert.IsFalse(store.Contains(ent1));
             Assert.IsTrue(store.Contains(ent2));
 
-            var versionInfo = (VersionInfo)store.First(e => e is VersionInfo vi && vi.HeadId == ent2.Id);
+            var versionInfo = (VersionInfo)store.First(e => e.Value is VersionInfo vi && vi.HeadId == ent2.Id).Value;
 
             Assert.IsTrue(versionInfo.HeadId == ent2.Id);
             Assert.IsTrue(versionInfo.Versions.Count == 1);
@@ -450,7 +450,7 @@ namespace Vent.Test
             Assert.IsTrue(store.SlotCount == 8);
             Assert.IsFalse(store.Contains(ent));
 
-            var versionInfo = (VersionInfo)store.FirstOrDefault(e => e is VersionInfo vi && vi.HeadId == oldEntId);
+            var versionInfo = (VersionInfo)store.FirstOrDefault(e => e.Value is VersionInfo vi && vi.HeadId == oldEntId).Value;
 
             Assert.IsNotNull(versionInfo);
 
@@ -769,7 +769,7 @@ namespace Vent.Test
             var ent3 = store.Commit(new PropertyEntity<string>("qaz"));
 
             // verify pre-state
-            Assert.IsTrue(store.Count(e => e is VersionInfo) == 3);
+            Assert.IsTrue(store.Count(kvp => kvp.Value is VersionInfo) == 3);
             Assert.IsTrue(store.EntitiesInScope == 12);
             Assert.IsTrue(store.MutationCount == 3);
             Assert.IsTrue(store.CurrentMutation == 3);
@@ -788,7 +788,7 @@ namespace Vent.Test
             Assert.IsTrue((store.GetMutation(0) as CommitEntity).MutatedEntityId == ent1.Id);
             Assert.IsTrue((store.GetMutation(1) as CommitEntity).MutatedEntityId == ent2.Id);
 
-            Assert.IsTrue(store.Count(e => e is VersionInfo) == 2);
+            Assert.IsTrue(store.Count(e => e.Value is VersionInfo) == 2);
         }
 
         /// <summary>
@@ -803,7 +803,7 @@ namespace Vent.Test
             var ent3 = store.Commit(new PropertyEntity<string>("qaz"));
 
             // verify pre-state
-            Assert.IsTrue(store.Count(e => e is VersionInfo) == 3);
+            Assert.IsTrue(store.Count(e => e.Value is VersionInfo) == 3);
             Assert.IsTrue(store.EntitiesInScope == 12);
             Assert.IsTrue(store.CurrentMutation == 3);
 
@@ -821,7 +821,7 @@ namespace Vent.Test
             Assert.IsTrue((store.GetMutation(0) as CommitEntity).MutatedEntityId == ent1.Id);
             Assert.IsTrue((store.GetMutation(1) as CommitEntity).MutatedEntityId == ent3.Id);
 
-            Assert.IsTrue(store.Count(e => e is VersionInfo) == 2);
+            Assert.IsTrue(store.Count(e => e.Value is VersionInfo) == 2);
         }
 
         /// <summary>
@@ -855,7 +855,7 @@ namespace Vent.Test
             Assert.IsTrue((store.GetMutation(0) as CommitEntity).MutatedEntityId == ent1.Id);
             Assert.IsTrue((store.GetMutation(1) as CommitEntity).MutatedEntityId == ent1.Id);
 
-            Assert.IsTrue(store.Count(e => e is VersionInfo) == 1);
+            Assert.IsTrue(store.Count(e => e.Value is VersionInfo) == 1);
             Assert.IsTrue(version.Versions.Count == 2);
             Assert.IsTrue(version.CurrentVersion == 2);
 
@@ -899,7 +899,7 @@ namespace Vent.Test
             Assert.IsTrue((store.GetMutation(0) as CommitEntity).MutatedEntityId == ent.Id);
             Assert.IsTrue((store.GetMutation(1) as CommitEntity).MutatedEntityId == ent.Id);
 
-            Assert.IsTrue(store.Count(e => e is VersionInfo) == 1);
+            Assert.IsTrue(store.Count(e => e.Value is VersionInfo) == 1);
             Assert.IsTrue(version.Versions.Count == 2);
             Assert.IsTrue(version.CurrentVersion == 2);
 
@@ -943,7 +943,7 @@ namespace Vent.Test
             Assert.IsTrue((store.GetMutation(0) as CommitEntity).MutatedEntityId == ent.Id);
             Assert.IsTrue((store.GetMutation(1) as CommitEntity).MutatedEntityId == ent.Id);
 
-            Assert.IsTrue(store.Count(e => e is VersionInfo) == 1);
+            Assert.IsTrue(store.Count(kvp => kvp.Value is VersionInfo) == 1);
             Assert.IsTrue(version.Versions.Count == 2);
             Assert.IsTrue(version.CurrentVersion == 2);
 

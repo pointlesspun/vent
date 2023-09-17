@@ -11,7 +11,7 @@ namespace Vent
     /// Entities may have version information associated with them which allows moving the global
     /// application state back in time (undo) or vice versa (redo).
     /// </summary>
-    public class EntityStore : IEnumerable<IEntity>
+    public class EntityStore : IEnumerable<KeyValuePair<int, IEntity>>
     {
         private int _entityId = 0;
 
@@ -26,6 +26,8 @@ namespace Vent
 
         private int _currentMutation = 0;
 
+        public string Version { get; set; } = "0.2";
+
         /// <summary>
         /// Number of entities in this store. Note this iterates over all 
         /// occupied entity slots so it might be rather slow.
@@ -36,6 +38,7 @@ namespace Vent
         /// Number of slots in use
         /// </summary>
         public int SlotCount => _entities.Count;
+
 
         /// <summary>
         /// Returns an enumertion of all mutations in this store
@@ -418,10 +421,16 @@ namespace Vent
             return true;
         }
 
-        public IEnumerator<IEntity> GetEnumerator()
+        public IEnumerator<KeyValuePair<int,IEntity>> GetEnumerator()
+        {
+            return _entities.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
         {
             return _entities.Values.GetEnumerator();
         }
+
 
         /// <summary>
         /// Checks if this entity object is in this store
@@ -622,10 +631,6 @@ namespace Vent
             }
         }       
         
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return _entities.Values.GetEnumerator();
-        }
 
         private void TryRemoveFutureMutations()
         {

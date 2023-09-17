@@ -56,7 +56,8 @@ namespace Vent.Test
             Assert.IsTrue(store.MutationCount == 100);
             Assert.IsTrue(store.EntitiesInScope == 400);
 
-            var versionedProperties = store.Where(e => store.HasVersionInfo(e) && e is PropertyEntity<string>)
+            var versionedProperties = store.Where(kvp => store.HasVersionInfo(kvp.Value) && kvp.Value is PropertyEntity<string>)
+                                            .Select(kvp => kvp.Value)
                                             .Cast <PropertyEntity<string>>();
 
             var fooCount = versionedProperties.Count(e => e.Value == "foo");

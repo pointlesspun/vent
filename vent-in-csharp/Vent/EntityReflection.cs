@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace Vent
 {
-    public static class CopyEntityProperties
+    public static class EntityReflection
     {
         public static void CopyPropertiesFrom(this IEntity to, IEntity from)
         {
@@ -41,15 +41,21 @@ namespace Vent
             }
         }
         private static bool CanDeepCopy(PropertyInfo info, object value)
-            => value != null && !IsReferenceOrPrimitive(info.PropertyType);
+            => value != null && !IsEntityOrPrimitiveOrString(info.PropertyType);
 
         private static bool CanDeepCopy(Type t, object value)
-            => value != null && !IsReferenceOrPrimitive(t);
+            => value != null && !IsEntityOrPrimitiveOrString(t);
 
-        public static bool IsReferenceOrPrimitive(Type propertyType) =>
-                   propertyType.IsPrimitive
-                || propertyType == typeof(string)
-                || typeof(IEntity).IsAssignableFrom(propertyType);
+        public static bool IsEntityOrPrimitiveOrString(Type propertyType) =>
+                   IsPrimitiveOrString(propertyType)
+                || IsEntity(propertyType);
+
+        public static bool IsEntity(Type propertyType) =>
+            typeof(IEntity).IsAssignableFrom(propertyType);
+
+        public static bool IsPrimitiveOrString(Type propertyType) =>
+            propertyType.IsPrimitive
+                || propertyType == typeof(string);
 
         private static object DeepCopyValue(object source)
         {

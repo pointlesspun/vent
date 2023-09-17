@@ -87,7 +87,9 @@ namespace Vent
 
             builder.AppendLine($"Entity count: {store.EntitiesInScope}");
 
-            var versionedEntities = store.Where(e => store.HasVersionInfo(e)).OrderBy(e => e.Id);
+            var versionedEntities = store.Where(kvp => store.HasVersionInfo(kvp.Value))
+                                        .Select( kvp => kvp.Value)
+                                        .OrderBy(e => e.Id);
 
             if (versionedEntities.Count() > 0)
             {
@@ -113,8 +115,10 @@ namespace Vent
         {
             Contract.NotNull(rng);
             
-            var candidateEntities = store.Where(e => e is T
-                                            && (!needsVersioning || store.GetVersionInfo(e) != null)).Cast<T>();
+            var candidateEntities = store.Where(e => e.Value is T&& (!needsVersioning || store.GetVersionInfo(e.Value) != null))
+                                            .Select(kvp => kvp.Value)
+                                            .Cast<T>();
+
             var count = candidateEntities.Count();
 
             if (count > 0)
