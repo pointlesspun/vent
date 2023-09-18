@@ -3,7 +3,7 @@
 
 namespace Vent
 {
-    public class EntityBase : IEntity
+    public abstract class EntityBase : IEntity
     {
         public int Id { get; set; } = -1;
         

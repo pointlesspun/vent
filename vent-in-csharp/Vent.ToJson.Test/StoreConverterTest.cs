@@ -24,9 +24,13 @@ namespace Vent.ToJson.Test
             store.Commit(new StringEntity("foo"));
             store.Commit(new StringEntity("bar"));
 
-            string json = JsonConvert.SerializeObject(store, Formatting.Indented, new StoreConverter());
+            var converter = new StoreConverter().RegisterEntityClasses(AppDomain.CurrentDomain.GetAssemblies());
+            
+            string json = JsonConvert.SerializeObject(store, Formatting.Indented, converter);
 
             Debug.WriteLine(json);
+
+            var storeCopy = JsonConvert.DeserializeObject<EntityStore>(json, converter);
 
         }
     }

@@ -132,6 +132,8 @@ namespace Vent
             }
         }
 
+        
+
         /// <summary>
         /// Register an entity without adding versioning
         /// </summary>
@@ -176,6 +178,27 @@ namespace Vent
 
             return entity;
         }
+
+        public void RestoreEntity(IEntity entity, int id)
+        {
+            Contract.Requires<ArgumentException>(id >= 0 && id < MaxEntitySlots, $"cannot restore an entity with an id ({id}) outside the valid id range ( 0..{MaxEntitySlots})");
+            Contract.Requires<InvalidOperationException>(!_entities.ContainsKey(id), $"Trying to restore an entity in a slot ({id}) that is already occupied.");
+
+            _entities[id] = entity;
+            entity.Id = id;
+        }
+
+        public void RestoreNextEntityId(int id)
+        {
+            Contract.Requires<ArgumentException>(id >= 0 && id < MaxEntitySlots, $"cannot set an id ({id}) outside the valid id range ( 0..{MaxEntitySlots})");
+            _entityId = id;
+        }
+
+        public void RestoreTransientProperties()
+        {
+            throw new NotImplementedException();
+        }
+
 
         /// <summary>
         /// Deregisters the given entity and sets the id to -1. 
