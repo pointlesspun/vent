@@ -188,15 +188,35 @@ namespace Vent
             entity.Id = id;
         }
 
-        public void RestoreNextEntityId(int id)
+        public void RestoreSettings(int id, int currentMutation, int openGroupCount)
         {
             Contract.Requires<ArgumentException>(id >= 0 && id < MaxEntitySlots, $"cannot set an id ({id}) outside the valid id range ( 0..{MaxEntitySlots})");
+
             _entityId = id;
+            _currentMutation = currentMutation;
+            OpenGroupCount = openGroupCount;
         }
 
         public void RestoreTransientProperties()
         {
-            throw new NotImplementedException();
+            _mutations.Clear();
+            _mutations.AddRange(_entities.Values
+                            .Where(e => e is IMutation)
+                            .Cast<IMutation>()
+                            .OrderBy(m => m.TimeStamp).ToList());
+
+            _entityVersionInfo.Clear();
+
+            var versionInfoCollection = _entities.Values
+                            .Where(e => e is VersionInfo)
+                            .Cast<VersionInfo>()
+                            .ToList();
+
+
+            foreach (var versionInfo in versionInfoCollection) 
+            {
+                _entityVersionInfo[versionInfo.HeadId] = versionInfo;
+            }
         }
 
 

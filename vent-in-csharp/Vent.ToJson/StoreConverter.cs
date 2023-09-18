@@ -1,17 +1,33 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
+﻿
 using System.Collections;
 using System.Reflection;
+
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Vent.ToJson
 {
     public class StoreConverter : JsonConverter<EntityStore>
     {
-        private const string EntityInstancesTag = "entityInstances";
-        private const string StoreConfigTag = "config";
-        private const string EntityPropertiesTag = "entityValues";
-        private Dictionary<string, Type> _classLookup = new Dictionary<string, Type>();
+        private const string EntityInstancesTag = "entities";
+        private const string StoreConfigTag = "storeProperties";
+        private const string EntityTypeTag = "__entityType";
+
+        private readonly Dictionary<string, Type> _classLookup = new();
+
+        public StoreConverter()
+        {
+        }
+
+        public StoreConverter(params Assembly[] assemblies)
+        {
+            RegisterEntityClasses(assemblies);
+        }
+
+        
+
+        public StoreConverter RegisterEntityClasses() => 
+            RegisterEntityClasses(AppDomain.CurrentDomain.GetAssemblies());
 
         public StoreConverter RegisterEntityClasses(params Assembly[] assemblies)
         {
@@ -44,9 +60,8 @@ namespace Vent.ToJson
         {
             writer.WriteStartObject();
 
-            WriteStoreConfig(writer, store);
-            WriteEntityTypes(writer, store);
-            WriteEntityProperties(writer, store);
+            WriteStoreProperties(writer, store);
+            WriteEntityInstances(writer, store);          
 
             writer.WriteEndObject();
         }
@@ -57,13 +72,11 @@ namespace Vent.ToJson
             { 
                 var storeJson = JObject.Load(reader);
                 
-                ReadConfig(storeJson[StoreConfigTag], store, serializer);
-                ReadEntityInstances(storeJson[EntityInstancesTag], store, serializer);
-                ReadEntityProperties(storeJson[EntityPropertiesTag], store, serializer);
+                ReadConfig(storeJson[StoreConfigTag], store);
+                ReadEntityInstances(storeJson[EntityInstancesTag], store);
+                ReadEntityProperties(storeJson[EntityInstancesTag], store);
 
-                // todo restore transient properties
                 store.RestoreTransientProperties();
-
 
                 return store;
             }
@@ -71,7 +84,7 @@ namespace Vent.ToJson
             throw new JsonException($"Trying to read EntityStore config but the current token is null.");
         }
 
-        private static void ReadConfig(JToken config, EntityStore store, JsonSerializer serializer)
+        private static void ReadConfig(JToken config, EntityStore store)
         {
             var version = (string) config[nameof(store.Version)];
 
@@ -80,14 +93,17 @@ namespace Vent.ToJson
                 throw new JsonException($"Version of the json data ({version}) doesn't match the given store {store.Version}.");
             }
 
-            store.RestoreNextEntityId((int) config[nameof(store.NextEntityId)]);
+            store.RestoreSettings((int) config[nameof(store.NextEntityId)], 
+                                    (int)config[nameof(store.CurrentMutation)],
+                                    (int)config[nameof(store.OpenGroupCount)]);
 
+            // restore configuration settings
             store.MaxEntitySlots = (int)config[nameof(store.MaxEntitySlots)];
             store.MaxMutations = (int)config[nameof(store.MaxMutations)];
             store.DeleteOutOfScopeVersions = (bool)config[nameof(store.DeleteOutOfScopeVersions)];
         }
 
-        private void ReadEntityInstances(JToken instances, EntityStore store, JsonSerializer serializer)
+        private void ReadEntityInstances(JToken instances, EntityStore store)
         {
             foreach ( var kvp in ((JObject)instances).Properties() ) 
             {
@@ -95,7 +111,7 @@ namespace Vent.ToJson
 
                 if (kvp.Value != null && kvp.Value.Type != JTokenType.None && kvp.Value.Type != JTokenType.Null)
                 {
-                    var className = (string)kvp.Value;
+                    var className = (string)kvp.Value[EntityTypeTag];
                     
                     if (className != null  && _classLookup.TryGetValue(className, out var type))
                     {
@@ -113,7 +129,7 @@ namespace Vent.ToJson
             }
         }
 
-        private void ReadEntityProperties(JToken properties, EntityStore store, JsonSerializer serializer)
+        private void ReadEntityProperties(JToken properties, EntityStore store)
         {
             foreach (var kvp in ((JObject)properties).Properties())
             {
@@ -124,7 +140,10 @@ namespace Vent.ToJson
                 {
                     foreach (var entityPropertyValue in ((JObject)kvp.Value))
                     {
-                        ReadProperty((KeyValuePair<string, JToken>) entityPropertyValue, store, entity);
+                        if (entityPropertyValue.Key != EntityTypeTag)
+                        {
+                            ReadProperty((KeyValuePair<string, JToken>)entityPropertyValue, store, entity);
+                        }
                     }
                 }
             }
@@ -135,7 +154,6 @@ namespace Vent.ToJson
             var propertyInfo = entity.GetType().GetProperty(property.Key);
 
             ReadValue(property.Value, store, entity, propertyInfo);
-    
         }
 
         private void ReadValue(JToken value, EntityStore store, IEntity entity, PropertyInfo info)
@@ -190,31 +208,19 @@ namespace Vent.ToJson
             }
         }
 
-        private void WriteStoreConfig(JsonWriter writer, EntityStore store)
+        private static void WriteStoreProperties(JsonWriter writer, EntityStore store)
         {
-            writer.WritePropertyName(StoreConfigTag);
-            writer.WriteStartObject();
-
-            writer.WritePropertyName(nameof(store.Version));
-            writer.WriteValue(store.Version);
-
-            writer.WritePropertyName(nameof(store.NextEntityId));
-            writer.WriteValue(store.NextEntityId);
-
-            writer.WritePropertyName(nameof(store.MaxEntitySlots));
-            writer.WriteValue(store.MaxEntitySlots);
-
-            writer.WritePropertyName(nameof(store.MaxMutations));
-            writer.WriteValue(store.MaxMutations);
-
-            writer.WritePropertyName(nameof(store.DeleteOutOfScopeVersions));
-            writer.WriteValue(store.DeleteOutOfScopeVersions);
-
-
-            writer.WriteEndObject();
+            writer.WriteObjectValues(StoreConfigTag, store,
+                    nameof(store.Version),
+                    nameof(store.NextEntityId),
+                    nameof(store.MaxEntitySlots),
+                    nameof(store.MaxMutations),
+                    nameof(store.DeleteOutOfScopeVersions),
+                    nameof(store.CurrentMutation),
+                    nameof(store.OpenGroupCount));
         }
 
-        private void WriteEntityTypes(JsonWriter writer, EntityStore store)
+        private static void WriteEntityInstances(JsonWriter writer, EntityStore store)
         {
             writer.WritePropertyName(EntityInstancesTag);
             writer.WriteStartObject();
@@ -222,33 +228,29 @@ namespace Vent.ToJson
             foreach (KeyValuePair<int, IEntity> kvp in store)
             {
                 writer.WritePropertyName(kvp.Key.ToString());
-                writer.WriteValue(kvp.Value?.GetType().FullName);
-            }
 
-            writer.WriteEndObject();
-        }
-
-        private void WriteEntityProperties(JsonWriter writer, EntityStore store) 
-        {
-            writer.WritePropertyName(EntityPropertiesTag);
-            writer.WriteStartObject();
-
-            foreach (KeyValuePair<int, IEntity> kvp in store)
-            {
                 if (kvp.Value != null)
                 {
-                    writer.WritePropertyName(kvp.Key.ToString());
-                    WriteObject(writer, kvp.Value);
+                    writer.WriteStartObject();
+
+                    writer.WritePropertyName(EntityTypeTag);
+                    writer.WriteValue(kvp.Value.GetType().FullName);
+
+                    WriteObjectProperties(writer, kvp.Value);
+
+                    writer.WriteEndObject();
+                }
+                else
+                {
+                    writer.WriteNull();
                 }
             }
 
             writer.WriteEndObject();
         }
 
-        private void WriteObject(JsonWriter writer, object obj) 
+        private static void WriteObjectProperties(JsonWriter writer, object obj)
         {
-            writer.WriteStartObject();
-
             foreach (PropertyInfo property in obj.GetType().GetProperties())
             {
                 if (property.CanWrite && property.CanRead)
@@ -256,94 +258,12 @@ namespace Vent.ToJson
                     var value = property.GetValue(obj);
 
                     writer.WritePropertyName(property.Name);
-                    WriteValue(writer, property.PropertyType, value);
+                    writer.WriteVentValue(value);
                 }
             }
-
-            writer.WriteEndObject();
         }
 
-        private void WriteValue(JsonWriter writer, Type propertyType, object value) 
-        {
-            if (value == null)
-            {
-                writer.WriteNull();
-            }
-            else if (EntityReflection.IsPrimitiveOrString(propertyType))
-            {
-                writer.WriteValue(value);
-            }
-            else if (EntityReflection.IsEntity(propertyType))
-            {
-                writer.WriteValue(((IEntity)value).Id);
-            }
-            else if (propertyType.IsArray)
-            {
-                WriteArray(writer, (Array)value);
-            }
-            else if (typeof(IEnumerable).IsAssignableFrom(propertyType))
-            {
-                if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>))
-                {
-                    WriteList(writer, (IList) value);
-                }
-                else if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
-                {
-                    WriteDictionary(writer, (IDictionary) value);
-                }
-            }
-            else
-            {
-                WriteObject(writer, value);
-            }
-        }
-
-        private void WriteArray(JsonWriter writer, Array array)
-        {
-            var type = array.GetType();
-            var elementType = type.GetElementType();
-            
-            writer.WriteStartArray();
-
-            for (int i = 0; i < array.Length; i++)
-            {
-                WriteValue(writer, elementType, array.GetValue(i));
-            }
-
-            writer.WriteEndArray();
-        }
-
-        private void WriteList(JsonWriter writer, IList list)
-        {
-            var type = list.GetType();
-            var elementType = type.GetGenericArguments()[0];
-
-            writer.WriteStartArray();
-
-            foreach (object element in list)
-            {
-                WriteValue(writer, elementType, element);
-            }
-
-            writer.WriteEndArray();
-        }
-
-        private void WriteDictionary(JsonWriter writer, IDictionary dictionary)
-        {
-            var type = dictionary.GetType();
-            var keyType = type.GetGenericArguments()[0];
-            var valueType = type.GetGenericArguments()[1];
-
-            writer.WriteStartObject();
-
-            foreach (DictionaryEntry entry in dictionary)
-            {
-                writer.WritePropertyName(entry.Key.ToString());
-                WriteValue(writer, valueType, entry.Value);
-            }
-
-            writer.WriteEndObject();
-        }
+        
     }
 }
 
