@@ -132,8 +132,6 @@ namespace Vent
             }
         }
 
-        
-
         /// <summary>
         /// Register an entity without adding versioning
         /// </summary>

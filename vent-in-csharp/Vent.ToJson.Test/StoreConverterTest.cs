@@ -1,16 +1,10 @@
 using Newtonsoft.Json;
 using System.Diagnostics;
-using Vent;
+using Vent.PropertyEntities;
 
 namespace Vent.ToJson.Test
 {
-    public class StringEntity : PropertyEntity<string>
-    {
-        public StringEntity() { }
-
-        public StringEntity(string value) : base(value) { }
-    }
-
+    
 
     [TestClass]
     public class StoreConverterTest
