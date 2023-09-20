@@ -122,14 +122,19 @@ namespace Vent
             entity.Id = -1;
         }
 
-        public void Link(IEntity entity)
+        /// <summary>
+        /// Assign the given entity to the given slot. If an existing entity 
+        /// was occupying the slot, it will be removed and its id set to -1
+        /// </summary>
+        /// <param name="entity"></param>
+        public T AssignEntityToSlot<T>(T entity, int slotId) where T : class, IEntity
         {
             Contract.Requires<ArgumentException>(entity != null);
-            Contract.Requires<InvalidOperationException>(!Contains(entity));
-            Contract.Requires<InvalidOperationException>(_entities.ContainsKey(entity.Id));
             Contract.Requires<ArgumentException>(entity != this, "Cannot register self.");
-
-            if (_entities.TryGetValue(entity.Id, out var existingEntity))
+            Contract.Requires<InvalidOperationException>(!Contains(entity));
+            Contract.Requires<InvalidOperationException>(_entities.ContainsKey(slotId));
+            
+            if (_entities.TryGetValue(slotId, out var existingEntity))
             {
                 if (existingEntity != null)
                 {
@@ -137,10 +142,20 @@ namespace Vent
                 }
             }
 
-            _entities[entity.Id] = entity;
+            _entities[slotId] = entity;
+            entity.Id = slotId;
+
+            return entity;
         }
 
-        public void Unlink(IEntity entity)
+        /// <summary>
+        /// Remove the given entity from its slot and set the slot to null.
+        /// This reduces the EntitiesInScope by one. The SlotCount (number
+        /// of slots in use) on the other hand will be unaffected.
+        /// other
+        /// </summary>
+        /// <param name="entity"></param>
+        public void RemoveEntityFromSlot(IEntity entity)
         {
             Contract.Requires<ArgumentException>(entity != null);
             Contract.Requires<InvalidOperationException>(Contains(entity));

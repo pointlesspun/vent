@@ -138,5 +138,58 @@ namespace Vent.Test
             Assert.IsTrue(ent2.Id == 1);
             Assert.IsTrue(ent3.Id == 2);
         }
+
+        [TestMethod]
+        public void AssignToSlotTest()
+        {
+            var registry = new EntityRegistry();
+            var ent1 = registry.Register(new StringEntity("foo"));
+            var ent2 = registry.AssignEntityToSlot(new StringEntity("bar"), ent1.Id);
+
+            Assert.IsFalse(registry.Contains(ent1));
+            Assert.IsTrue(registry.Contains(ent2));
+            Assert.IsTrue(ent1.Id == -1);
+        }
+
+        [TestMethod]
+        public void RemoveFromSlotTest()
+        {
+            var registry = new EntityRegistry();
+            var ent1 = registry.Register(new StringEntity("foo"));
+
+            Assert.IsTrue(registry.Contains(ent1));
+            Assert.IsTrue(registry.EntitiesInScope == 1);
+            Assert.IsTrue(registry.SlotCount == 1);
+
+            registry.RemoveEntityFromSlot(ent1);
+
+            Assert.IsFalse(registry.Contains(ent1));
+            Assert.IsTrue(ent1.Id == -1);
+            Assert.IsTrue(registry.EntitiesInScope == 0);
+            Assert.IsTrue(registry.SlotCount == 1);
+        }
+
+        [TestMethod]
+        public void CloneTest()
+        {
+            var registry = new EntityRegistry()
+            {
+                MaxEntitySlots = 5,
+            };
+            
+            registry.Register(new StringEntity("foo"));
+            registry.Register(new StringEntity("bar"));
+            registry.Register(new StringEntity("qad"));
+
+            var clone = registry.Clone() as EntityRegistry;
+
+            Assert.IsTrue(clone.MaxEntitySlots == registry.MaxEntitySlots);
+
+            foreach (var kvp in registry)
+            {
+                Assert.IsTrue(clone[kvp.Key] != registry[kvp.Key]);
+                Assert.IsTrue(((StringEntity)clone[kvp.Key]).Value == ((StringEntity)registry[kvp.Key]).Value);
+            }
+        }
     }
 }

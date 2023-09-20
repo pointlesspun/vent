@@ -7,7 +7,7 @@ Project Notes
 * Install reporting tool: `dotnet tool install -g dotnet-reportgenerator-globaltool`
 * Run code coverage in test project directory: `dotnet test --collect:"XPlat Code Coverage"`
 * This will generate a report called `coverage.cobertura.xml`
-* Run Reporting: `-reports:"Path_to_\coverage.cobertura.xml" -targetdir:"coveragereport" -reporttypes:Html`
+* Run Reporting: `reportgenerator -reports:"Path_to_\coverage.cobertura.xml" -targetdir:"coveragereport" -reporttypes:Html`
 * View generated html report :)
 
 More information:
