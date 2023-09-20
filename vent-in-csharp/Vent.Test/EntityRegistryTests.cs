@@ -64,5 +64,79 @@ namespace Vent.Test
 
             Assert.Fail();
         }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void SelfRegisterTest()
+        {
+            var registry = new EntityRegistry();
+            registry.Register(registry);
+
+            Assert.Fail();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public void SelfSameEntityTest()
+        {
+            var registry = new EntityRegistry();
+            var ent = registry.Register(new StringEntity("foo"));
+
+            registry.Register(ent);
+
+            Assert.Fail();
+        }
+
+        [TestMethod]
+        public void WrapEntityIdTest()
+        {
+            var registry = new EntityRegistry()
+            {
+                MaxEntitySlots = 2
+            };
+            var ent1 = registry.Register(new StringEntity("foo"));
+            var ent2 = registry.Register(new StringEntity("bar"));
+
+            registry.Deregister(ent1);
+
+            var ent3 = registry.Register(new StringEntity("qaz"));
+
+            Assert.IsTrue(registry.SlotCount == 2);
+            Assert.IsTrue(registry.EntitiesInScope == 2);
+            Assert.IsTrue(registry.NextEntityId == 1);
+
+            Assert.IsTrue(ent1.Id == -1);
+            Assert.IsTrue(registry[ent1.Id] == null);
+            Assert.IsTrue(ent3.Id == 0);
+            Assert.IsTrue(ent2.Id == 1);
+        }
+
+        [TestMethod]
+        public void SetNextEntityIdAndWrapEntityIdTest()
+        {
+            var registry = new EntityRegistry()
+            {
+                MaxEntitySlots = 3
+            };
+            var ent1 = registry.Register(new StringEntity("foo"));
+            var ent2 = registry.Register(new StringEntity("bar"));
+            var ent3 = registry.Register(new StringEntity("qad"));
+
+            registry.Deregister(ent1);
+
+            registry.NextEntityId = 1;
+
+            var ent4 = registry.Register(new StringEntity("thud"));
+
+            Assert.IsTrue(registry.SlotCount == 3);
+            Assert.IsTrue(registry.EntitiesInScope == 3);
+            Assert.IsTrue(registry.NextEntityId == 1);
+
+            Assert.IsTrue(ent1.Id == -1);
+            Assert.IsTrue(registry[ent1.Id] == null);
+            Assert.IsTrue(ent4.Id == 0);
+            Assert.IsTrue(ent2.Id == 1);
+            Assert.IsTrue(ent3.Id == 2);
+        }
     }
 }
