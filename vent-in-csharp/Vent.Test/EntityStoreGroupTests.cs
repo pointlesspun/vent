@@ -9,7 +9,8 @@ namespace Vent.Test
         [TestMethod]
         public void BeginGroupAndUndoTests()
         {
-            var store = new EntityHistory(new EntityRegistry());
+            var registry = new EntityRegistry();
+            var store = new EntityHistory(registry);
 
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
 
@@ -25,7 +26,7 @@ namespace Vent.Test
             Assert.IsTrue(store.CurrentMutation == 5);
             // 1 entity, 1 versioninfo, 3 versions
             // 5 mutations
-            Assert.IsTrue(store.EntitiesInScope == 10);
+            Assert.IsTrue(registry.EntitiesInScope == 10);
 
             store.Undo();
             Assert.IsTrue(ent1.Value == "bar");
@@ -139,7 +140,8 @@ namespace Vent.Test
         [TestMethod]
         public void ExceedMaxMutationCountTest()
         {
-            var store = new EntityHistory(new EntityRegistry())
+            var registry = new EntityRegistry();
+            var store = new EntityHistory(registry)
             {
                 MaxMutations = 4
             };
@@ -156,11 +158,11 @@ namespace Vent.Test
 
             Assert.IsTrue(store.MutationCount == 1);
             Assert.IsTrue(store.CurrentMutation == 1);
-            Assert.IsTrue(store.EntitiesInScope == 4);
+            Assert.IsTrue(registry.EntitiesInScope == 4);
 
-            Assert.IsFalse(store.Contains(ent1));
-            Assert.IsFalse(store.Contains(ent2));
-            Assert.IsTrue(store.Contains(ent3));
+            Assert.IsFalse(registry.Contains(ent1));
+            Assert.IsFalse(registry.Contains(ent2));
+            Assert.IsTrue(registry.Contains(ent3));
         }
 
 
@@ -206,7 +208,8 @@ namespace Vent.Test
         [TestMethod]
         public void RemoveFutureMutationAfterBeginGroupTest()
         {
-            var store = new EntityHistory(new EntityRegistry());
+            var registry = new EntityRegistry();
+            var store = new EntityHistory(registry);
 
             var ent1 = store.Commit(new PropertyEntity<string>("foo0"));
             var ent2 = store.Commit(new PropertyEntity<string>("bar0"));
@@ -221,7 +224,7 @@ namespace Vent.Test
             Assert.IsTrue(ent2.Value == "bar2");
             Assert.IsTrue(store.MutationCount == 6);
             Assert.IsTrue(store.CurrentMutation == 6);
-            Assert.IsTrue(store.EntitiesInScope == 16);
+            Assert.IsTrue(registry.EntitiesInScope == 16);
 
             store.ToTail();
 
@@ -233,7 +236,7 @@ namespace Vent.Test
 
             Assert.IsTrue(store.MutationCount == 4);
             Assert.IsTrue(store.CurrentMutation == 4);
-            Assert.IsTrue(store.EntitiesInScope == 11);
+            Assert.IsTrue(registry.EntitiesInScope == 11);
         }
 
 
@@ -241,7 +244,8 @@ namespace Vent.Test
         [TestMethod]
         public void RemoveOldestGroupMutationTest()
         {
-            var store = new EntityHistory(new EntityRegistry());
+            var registry = new EntityRegistry();
+            var store = new EntityHistory(registry);
 
             var ent1 = new PropertyEntity<string>("foo");
             var ent2 = new PropertyEntity<string>("bar");
@@ -256,51 +260,53 @@ namespace Vent.Test
 
             store.Commit(ent3);
 
-            Assert.IsTrue(store.Contains(ent1));
-            Assert.IsTrue(store.Contains(ent2));
-            Assert.IsTrue(store.Contains(ent3));
+            Assert.IsTrue(registry.Contains(ent1));
+            Assert.IsTrue(registry.Contains(ent2));
+            Assert.IsTrue(registry.Contains(ent3));
             Assert.IsTrue(store.MutationCount == 5);
             Assert.IsTrue(store.CurrentMutation == 5);
-            Assert.IsTrue(store.EntitiesInScope == 14);
-            Assert.IsTrue(store.SlotCount == 14);
+            Assert.IsTrue(registry.EntitiesInScope == 14);
+            Assert.IsTrue(registry.SlotCount == 14);
 
             store.DeleteMutation(0);
 
-            Assert.IsFalse(store.Contains(ent1));
-            Assert.IsFalse(store.Contains(ent2));
-            Assert.IsTrue(store.Contains(ent3));
+            Assert.IsFalse(registry.Contains(ent1));
+            Assert.IsFalse(registry.Contains(ent2));
+            Assert.IsTrue(registry.Contains(ent3));
             Assert.IsTrue(store.MutationCount == 1);
             Assert.IsTrue(store.CurrentMutation == 1);
-            Assert.IsTrue(store.EntitiesInScope == 4);
-            Assert.IsTrue(store.SlotCount == 4);
+            Assert.IsTrue(registry.EntitiesInScope == 4);
+            Assert.IsTrue(registry.SlotCount == 4);
         }
 
         [TestMethod]
         public void RemoveOldestEmptyGroupMutationTest()
         {
-            var store = new EntityHistory(new EntityRegistry());
+            var registry = new EntityRegistry();
+            var store = new EntityHistory(registry);
 
             store.BeginMutationGroup();
             store.EndMutationGroup();
 
             Assert.IsTrue(store.MutationCount == 2);
             Assert.IsTrue(store.CurrentMutation == 2);
-            Assert.IsTrue(store.EntitiesInScope == 2);
-            Assert.IsTrue(store.SlotCount == 2);
+            Assert.IsTrue(registry.EntitiesInScope == 2);
+            Assert.IsTrue(registry.SlotCount == 2);
 
             store.DeleteMutation(0);
 
             Assert.IsTrue(store.MutationCount == 0);
             Assert.IsTrue(store.CurrentMutation == 0);
-            Assert.IsTrue(store.EntitiesInScope == 0);
-            Assert.IsTrue(store.SlotCount == 0);
+            Assert.IsTrue(registry.EntitiesInScope == 0);
+            Assert.IsTrue(registry.SlotCount == 0);
 
         }
 
         [TestMethod]
         public void ShouldBeAbleToRemoveClosedGroupTest()
         {
-            var store = new EntityHistory(new EntityRegistry());
+            var registry = new EntityRegistry();
+            var store = new EntityHistory(registry);
 
             store.BeginMutationGroup();
             store.EndMutationGroup();
@@ -311,16 +317,16 @@ namespace Vent.Test
 
             Assert.IsTrue(store.MutationCount == 3);
             Assert.IsTrue(store.CurrentMutation == 3);
-            Assert.IsTrue(store.EntitiesInScope == 3);
-            Assert.IsTrue(store.SlotCount == 3);
+            Assert.IsTrue(registry.EntitiesInScope == 3);
+            Assert.IsTrue(registry.SlotCount == 3);
             Assert.IsTrue(store.OpenGroupCount == 1);
 
             store.DeleteMutation(0);
 
             Assert.IsTrue(store.MutationCount == 1);
             Assert.IsTrue(store.CurrentMutation == 1);
-            Assert.IsTrue(store.EntitiesInScope == 1);
-            Assert.IsTrue(store.SlotCount == 1);
+            Assert.IsTrue(registry.EntitiesInScope == 1);
+            Assert.IsTrue(registry.SlotCount == 1);
             Assert.IsTrue(store.OpenGroupCount == 1);
         }
 

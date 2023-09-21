@@ -13,7 +13,8 @@ namespace Vent.ToJson.Test
         [TestMethod]
         public void WriteToJsonTest()
         {
-            var store = new EntityHistory(new EntityRegistry());
+            var registry = new EntityRegistry();
+            var store = new EntityHistory(registry);
 
             var ent1 = store.Commit(new StringEntity("foo-1"));
             var ent2 = store.Commit(new StringEntity("foo-2"));
@@ -32,12 +33,12 @@ namespace Vent.ToJson.Test
             Assert.IsTrue(store.CurrentMutation == storeCopy.CurrentMutation);
             Assert.IsTrue(store.MutationCount == storeCopy.MutationCount);
             Assert.IsTrue(store.DeleteOutOfScopeVersions == storeCopy.DeleteOutOfScopeVersions);
-            Assert.IsTrue(store.SlotCount == storeCopy.SlotCount);
-            Assert.IsTrue(store.EntitiesInScope == storeCopy.EntitiesInScope);
+            Assert.IsTrue(registry.SlotCount == storeCopy.Registry.SlotCount);
+            Assert.IsTrue(registry.EntitiesInScope == storeCopy.Registry.EntitiesInScope);
             Assert.IsTrue(store.MaxEntitySlots == storeCopy.MaxEntitySlots);
 
-            var ent1_ = (StringEntity) storeCopy[ent1.Id];
-            var ent2_ = (StringEntity) storeCopy[ent2.Id];
+            var ent1_ = (StringEntity) storeCopy.Registry[ent1.Id];
+            var ent2_ = (StringEntity) storeCopy.Registry[ent2.Id];
 
             Assert.IsTrue(ent1.Value == ent1_.Value);
             Assert.IsTrue(ent2.Value == ent2_.Value);

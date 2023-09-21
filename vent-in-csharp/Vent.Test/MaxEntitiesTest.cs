@@ -9,31 +9,32 @@ namespace Vent.Test
         [TestMethod]
         public void SmallSetWithRegisteredEntitiesOnly()
         {
-            var store = new EntityHistory(new EntityRegistry())
+            var registry = new EntityRegistry();
+            var store = new EntityHistory(registry)
             {
                 MaxEntitySlots = 3
             };
 
-            while (store.SlotCount < store.MaxEntitySlots)
+            while (registry.SlotCount < store.MaxEntitySlots)
             {
-                store.Register(new PropertyEntity<string>("foo"));
+                registry.Register(new PropertyEntity<string>("foo"));
             }
 
-            Assert.IsTrue(store.SlotCount == 3);
-            Assert.IsTrue(store.EntitiesInScope == 3);
+            Assert.IsTrue(registry.SlotCount == 3);
+            Assert.IsTrue(registry.EntitiesInScope == 3);
 
-            store.Deregister(store[1]);
+            store.Deregister(registry[1]);
             
-            Assert.IsTrue(store.SlotCount == 2);
-            Assert.IsTrue(store.EntitiesInScope == 2);
+            Assert.IsTrue(registry.SlotCount == 2);
+            Assert.IsTrue(registry.EntitiesInScope == 2);
 
             // this should go into id = 1
-            var ent = store.Register(new PropertyEntity<string>("bar"));
+            var ent = registry.Register(new PropertyEntity<string>("bar"));
 
             Assert.IsTrue(ent.Id == 1);
 
-            Assert.IsTrue(store.SlotCount == 3);
-            Assert.IsTrue(store.EntitiesInScope == 3);
+            Assert.IsTrue(registry.SlotCount == 3);
+            Assert.IsTrue(registry.EntitiesInScope == 3);
         }
 
         /// <summary>
@@ -44,25 +45,25 @@ namespace Vent.Test
         [ExpectedException(typeof(InvalidOperationException))]
         public void DeregisterComittedEntityTest()
         {
-            var store = new EntityHistory(new EntityRegistry())
+            var registry = new EntityRegistry();
+            var store = new EntityHistory(registry)
             {
                 MaxEntitySlots = 6
             };
 
             var ent = store.Commit(new PropertyEntity<string>("foo"));
 
-            Assert.IsTrue(store.SlotCount == 4);
-            Assert.IsTrue(store.EntitiesInScope == 4);
+            Assert.IsTrue(registry.SlotCount == 4);
+            Assert.IsTrue(registry.EntitiesInScope == 4);
 
             store.Deregister(ent);
 
             // should contain 2 mutations, 1 version info and 2 versions and 1 slot in reserve
-            Assert.IsTrue(store.SlotCount == 6);
-            Assert.IsTrue(store.EntitiesInScope == 5);
+            Assert.IsTrue(registry.SlotCount == 6);
+            Assert.IsTrue(registry.EntitiesInScope == 5);
 
             // everything is in use, this should throw an exception
-            store.Register(new PropertyEntity<string>("bar"));
-
+            registry.Register(new PropertyEntity<string>("bar"));
         }
     }
 }

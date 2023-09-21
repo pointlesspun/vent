@@ -11,7 +11,7 @@ namespace Vent
     /// Entities may have version information associated with them which allows moving the global
     /// application state back in time (undo) or vice versa (redo).
     /// </summary>
-    public class EntityHistory : IEnumerable<KeyValuePair<int, IEntity>>
+    public class EntityHistory 
     {
         public EntityRegistry Registry
         {
@@ -30,18 +30,6 @@ namespace Vent
         private int _currentMutation = 0;
 
         public string Version { get; set; } = "0.2";
-
-        /// <summary>
-        /// Number of entities in this store. Note this iterates over all 
-        /// occupied entity slots so it might be rather slow.
-        /// </summary>
-        public int EntitiesInScope => Registry.EntitiesInScope;
-
-        /// <summary>
-        /// Number of slots in use
-        /// </summary>
-        public int SlotCount => Registry.SlotCount;
-
 
         /// <summary>
         /// Returns an enumertion of all mutations in this store
@@ -100,26 +88,12 @@ namespace Vent
         } = true;
 
         /// <summary>
-        /// Returns the id of the next committed entity IF that entity
-        /// is not yet in the store.
-        /// </summary>
-        public int NextEntityId => Registry.NextEntityId;
-
-        /// <summary>
         /// Check if the given entity maintains versioninfo
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
         public bool HasVersionInfo(IEntity entity) => 
             entity != null && _entityVersionInfo.ContainsKey(entity.Id);
-
-        /// <summary>
-        /// Returns the entity with the given id
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns>The entity with the given id or null if no such entity exists</returns>
-        public IEntity this[int id] => Registry[id];
-
 
         public EntityHistory()
         {
@@ -129,17 +103,7 @@ namespace Vent
         {
             Registry = registry;
         }
-
-        /// <summary>
-        /// Register an entity without adding versioning
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="entity"></param>
-        /// <returns>the registered entity</returns>
-        public T Register<T>(T entity) where T : class, IEntity =>  Registry.Register<T>(entity);
-        
-        public void RestoreEntity(IEntity entity, int id) => Registry.AssignEntityToSlot(entity, id);
-        
+       
         public void RestoreSettings(int id, int currentMutation, int openGroupCount)
         {
             Contract.Requires<ArgumentException>(id >= 0 && id < MaxEntitySlots, $"cannot set an id ({id}) outside the valid id range ( 0..{MaxEntitySlots})");
@@ -177,7 +141,7 @@ namespace Vent
         public void Deregister(IEntity entity)
         {
             Contract.Requires<ArgumentException>(entity != null);
-            Contract.Requires<InvalidOperationException>(Contains(entity));
+            Contract.Requires<InvalidOperationException>(Registry.Contains(entity));
 
             if (_entityVersionInfo.TryGetValue(entity.Id, out VersionInfo versionInfo))
             {
@@ -186,9 +150,9 @@ namespace Vent
 
                 // entity must still exist after removing all mutations, if not the deregister
                 // will be ignored - it basically counts as a NOP
-                if (Contains(entity))
+                if (Registry.Contains(entity))
                 {
-                    var lastVersion = Register((IEntity)entity.Clone());
+                    var lastVersion = Registry.Register((IEntity)entity.Clone());
                     versionInfo.CommitVersion(lastVersion);
 
                     AddMutation(new DeregisterEntity(entity, lastVersion));
@@ -253,13 +217,13 @@ namespace Vent
                 }
 
                 // create a snapshot of the current entity
-                newVersion = Register((IEntity)entity.Clone());
+                newVersion = Registry.Register((IEntity)entity.Clone());
                 versionInfo.CommitVersion(newVersion);
             }
             else
             {
                 // entity is not yet added to the store?
-                if (!Contains(entity))
+                if (!Registry.Contains(entity))
                 {
                     Registry.Register(entity);
                 }
@@ -285,7 +249,7 @@ namespace Vent
         /// <param name="entity"></param>
         public void Revert(IEntity entity)
         {
-            Contract.Requires<InvalidOperationException>(Contains(entity));
+            Contract.Requires<InvalidOperationException>(Registry.Contains(entity));
 
             var versionInfo = GetVersionInfo(entity);
 
@@ -407,24 +371,6 @@ namespace Vent
 
             return true;
         }
-
-        public IEnumerator<KeyValuePair<int,IEntity>> GetEnumerator()
-        {
-            return Registry.GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return Registry.GetEnumerator();
-        }
-
-
-        /// <summary>
-        /// Checks if this entity object is in this store
-        /// </summary>
-        /// <param name="entity"></param>
-        /// <returns></returns>
-        public bool Contains(IEntity entity) => Registry.Contains(entity);
 
         public void DeleteMutation(int index)
         {
@@ -549,7 +495,7 @@ namespace Vent
 
         private void AddMutation(IMutation mutation)
         {
-            _mutations.Add(Register(mutation));
+            _mutations.Add(Registry.Register(mutation));
             _currentMutation++;
 
             // if max mutations <= 0 there is no limit to the number of mutations
@@ -650,7 +596,7 @@ namespace Vent
         /// <returns></returns>
         private IEntity AddVersioning(IEntity entity)
         {
-            var versionInfo = Register(new VersionInfo()
+            var versionInfo = Registry.Register(new VersionInfo()
             {
                 HeadId = entity.Id,
                 Id = Registry.NextEntityId,
@@ -658,7 +604,7 @@ namespace Vent
             });
 
             // remove all mutations in front of this one - if any
-            var version0 = Register((IEntity)entity.Clone());
+            var version0 = Registry.Register((IEntity)entity.Clone());
             versionInfo.CommitVersion(version0);
 
             _entityVersionInfo[entity.Id] = versionInfo;
@@ -704,7 +650,7 @@ namespace Vent
 
                 entity.Id = -1;
             }
-            else if (mutation is CommitEntity && !Contains(entity))
+            else if (mutation is CommitEntity && !Registry.Contains(entity))
             {
                 Registry.AssignEntityToSlot(entity, entity.Id);
             }

@@ -101,11 +101,11 @@ namespace Vent.Test
                     (store) =>
                     {
                         var guid = Guid.NewGuid().ToString();
-                        var entityName = $"{store.NextEntityId}.{guid}";
-                        logFunction?.Invoke($"#{store.CurrentMutation}: create & commit id:{store.NextEntityId} = {entityName}");
+                        var entityName = $"{store.Registry.NextEntityId}.{guid}";
+                        logFunction?.Invoke($"#{store.CurrentMutation}: create & commit id:{store.Registry.NextEntityId} = {entityName}");
                         store.Commit(new PropertyEntity<string>($"{entityName}"));
                     },
-                    (store) => store.SlotCount < store.MaxEntitySlots - 3
+                    (store) => store.Registry.SlotCount < store.MaxEntitySlots - 3
                 ),
                 new SmokeTestAction(
                     UndoActionName,
@@ -146,7 +146,7 @@ namespace Vent.Test
                             logFunction?.Invoke($"No random entity found, skipping update (commit)");
                         }
                     },
-                    (store) => store.EntitiesInScope > 0 && store.SlotCount < store.MaxEntitySlots - 1
+                    (store) => store.Registry.EntitiesInScope > 0 && store.Registry.SlotCount < store.MaxEntitySlots - 1
                 ),
                 new SmokeTestAction(
                     "deregister",
@@ -164,7 +164,7 @@ namespace Vent.Test
                             logFunction?.Invoke($"No random entity found, skipping deregister");
                         }
                     },
-                    (store) => store.EntitiesInScope > 0 && store.SlotCount < store.MaxEntitySlots - 1
+                    (store) => store.Registry.EntitiesInScope > 0 && store.Registry.SlotCount < store.MaxEntitySlots - 1
                 ),
                 new SmokeTestAction(
                     "remove oldest",
@@ -181,7 +181,7 @@ namespace Vent.Test
                     },
                     (store) => store.MutationCount > 0 && 
                                     (!(store.GetMutation(0) is BeginMutationGroup) || !store.IsGroupOpen(0)),
-                    (store) => store.MutationCount + (int)(100.0 * (store.SlotCount / Math.Min(5000, store.MaxEntitySlots)))
+                    (store) => store.MutationCount + (int)(100.0 * (store.Registry.SlotCount / Math.Min(5000, store.MaxEntitySlots)))
                 ),
                 new SmokeTestAction(
                     UndoManyActionName,
@@ -228,7 +228,7 @@ namespace Vent.Test
                     logFunction?.Invoke($"#{store.CurrentMutation}: begin group {store.OpenGroupCount}/{maxGroups}");
                     store.BeginMutationGroup();
                 },
-                (store) => store.SlotCount < store.MaxEntitySlots - 1 && store.OpenGroupCount < maxGroups
+                (store) => store.Registry.SlotCount < store.MaxEntitySlots - 1 && store.OpenGroupCount < maxGroups
             ));
 
             list.Add(new SmokeTestAction(
@@ -238,7 +238,7 @@ namespace Vent.Test
                     logFunction?.Invoke($"#{store.CurrentMutation}: end group {store.OpenGroupCount}/{maxGroups}");
                     store.EndMutationGroup();
                 },
-                (store) => store.SlotCount < store.MaxEntitySlots - 1 && store.OpenGroupCount > 0,
+                (store) => store.Registry.SlotCount < store.MaxEntitySlots - 1 && store.OpenGroupCount > 0,
                 (store) => endGroupWeight + (int) (100 * ((double)store.OpenGroupCount+1) / ((double)maxGroups))
             ));
 

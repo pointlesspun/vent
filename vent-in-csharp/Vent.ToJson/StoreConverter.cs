@@ -93,7 +93,7 @@ namespace Vent.ToJson
                 throw new JsonException($"Version of the json data ({version}) doesn't match the given store {store.Version}.");
             }
 
-            store.RestoreSettings((int) config[nameof(store.NextEntityId)], 
+            store.RestoreSettings((int) config[nameof(store.Registry.NextEntityId)], 
                                     (int)config[nameof(store.CurrentMutation)],
                                     (int)config[nameof(store.OpenGroupCount)]);
 
@@ -115,7 +115,7 @@ namespace Vent.ToJson
                     
                     if (className != null  && _classLookup.TryGetValue(className, out var type))
                     {
-                        store.RestoreEntity((IEntity) Activator.CreateInstance(type), key);
+                        store.Registry.AssignEntityToSlot((IEntity) Activator.CreateInstance(type), key);
                     }
                     else 
                     {
@@ -124,7 +124,7 @@ namespace Vent.ToJson
                 }
                 else
                 {
-                    store.RestoreEntity(null, key);
+                    store.Registry.AssignEntityToSlot((IEntity)null, key);
                 }
             }
         }
@@ -134,7 +134,7 @@ namespace Vent.ToJson
             foreach (var kvp in ((JObject)properties).Properties())
             {
                 var key = int.Parse(kvp.Name);
-                var entity = store[key];
+                var entity = store.Registry[key];
 
                 if (kvp.Value != null && kvp.Value.Type != JTokenType.None && kvp.Value.Type != JTokenType.Null)
                 {
@@ -168,7 +168,7 @@ namespace Vent.ToJson
             else if (EntityReflection.IsEntity(type))
             {
                 var id = int.Parse(value.ToString());
-                info.SetValue(entity, store[id]);
+                info.SetValue(entity, store.Registry[id]);
             }
             else if (type.IsArray)
             {
@@ -189,7 +189,7 @@ namespace Vent.ToJson
                         foreach (var arrayValue in array)
                         {
                             var key = arrayValue.ToObject<int>();
-                            listValue.Add(store[key]);
+                            listValue.Add(store.Registry[key]);
                         }
 
                         info.SetValue(entity, listValue);
@@ -212,7 +212,7 @@ namespace Vent.ToJson
         {
             writer.WriteObjectValues(StoreConfigTag, store,
                     nameof(store.Version),
-                    nameof(store.NextEntityId),
+                    nameof(store.Registry.NextEntityId),
                     nameof(store.MaxEntitySlots),
                     nameof(store.MaxMutations),
                     nameof(store.DeleteOutOfScopeVersions),
@@ -225,7 +225,7 @@ namespace Vent.ToJson
             writer.WritePropertyName(EntityInstancesTag);
             writer.WriteStartObject();
 
-            foreach (KeyValuePair<int, IEntity> kvp in store)
+            foreach (KeyValuePair<int, IEntity> kvp in store.Registry)
             {
                 writer.WritePropertyName(kvp.Key.ToString());
 

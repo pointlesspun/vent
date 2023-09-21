@@ -32,7 +32,7 @@ namespace Vent.Test
             var store = RunSmokeTest(1, -1, 42, actionSelection);
 
             Assert.IsTrue(store.MutationCount == 1);
-            Assert.IsTrue(store.EntitiesInScope == 4);
+            Assert.IsTrue(store.Registry.EntitiesInScope == 4);
         }
 
         /// <summary>
@@ -54,9 +54,9 @@ namespace Vent.Test
             var store = RunSmokeTest(100, -1, 3, actionSelection);
 
             Assert.IsTrue(store.MutationCount == 100);
-            Assert.IsTrue(store.EntitiesInScope == 400);
+            Assert.IsTrue(store.Registry.EntitiesInScope == 400);
 
-            var versionedProperties = store.Where(kvp => store.HasVersionInfo(kvp.Value) && kvp.Value is PropertyEntity<string>)
+            var versionedProperties = store.Registry.Where(kvp => store.HasVersionInfo(kvp.Value) && kvp.Value is PropertyEntity<string>)
                                             .Select(kvp => kvp.Value)
                                             .Cast <PropertyEntity<string>>();
 
@@ -83,17 +83,17 @@ namespace Vent.Test
 
             store = RunSmokeTest(50000, 50, 3128, actionSelection, true, 150);
             Debug.WriteLine(store.ToStateString());
-            Assert.IsTrue(store.SlotCount < 150);
+            Assert.IsTrue(store.Registry.SlotCount < 150);
             Assert.IsTrue(store.MutationCount < 50);
 
             store = RunSmokeTest(50000, 75, 18162, actionSelection, true, 250);
             Debug.WriteLine(store.ToStateString());
-            Assert.IsTrue(store.SlotCount < 250);
+            Assert.IsTrue(store.Registry.SlotCount < 250);
             Assert.IsTrue(store.MutationCount < 75);
 
             store = RunSmokeTest(50000, 100, 71216, actionSelection, true, 500);
             Debug.WriteLine(store.ToStateString());
-            Assert.IsTrue(store.SlotCount < 500);
+            Assert.IsTrue(store.Registry.SlotCount < 500);
             Assert.IsTrue(store.MutationCount < 100);
         }
         
@@ -191,7 +191,7 @@ namespace Vent.Test
                 Debug.WriteLine("Spool store... closing open groups");
                 while (store.OpenGroupCount > 0)
                 {
-                    if (store.SlotCount >= store.MaxEntitySlots - 1)
+                    if (store.Registry.SlotCount >= store.MaxEntitySlots - 1)
                     {
                         store.DeleteMutation(0);
                     }

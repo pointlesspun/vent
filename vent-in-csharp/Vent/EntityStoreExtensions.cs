@@ -84,9 +84,9 @@ namespace Vent
                 builder.AppendLine(mutation.ToString());
             }
 
-            builder.AppendLine($"Entity count: {store.EntitiesInScope}");
+            builder.AppendLine($"Entity count: {store.Registry.EntitiesInScope}");
 
-            var versionedEntities = store.Where(kvp => store.HasVersionInfo(kvp.Value))
+            var versionedEntities = store.Registry.Where(kvp => store.HasVersionInfo(kvp.Value))
                                         .Select( kvp => kvp.Value)
                                         .OrderBy(e => e.Id);
 
@@ -114,7 +114,7 @@ namespace Vent
         {
             Contract.NotNull(rng);
             
-            var candidateEntities = store.Where(e => e.Value is T&& (!needsVersioning || store.GetVersionInfo(e.Value) != null))
+            var candidateEntities = store.Registry.Where(e => e.Value is T&& (!needsVersioning || store.GetVersionInfo(e.Value) != null))
                                             .Select(kvp => kvp.Value)
                                             .Cast<T>();
 

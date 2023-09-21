@@ -13,7 +13,8 @@ namespace Vent.Test
         public void BasicCommitUndoExample()
         {
             // create a new store
-            var store = new EntityHistory(new EntityRegistry());
+            var registry = new EntityRegistry();
+            var store = new EntityHistory(registry);
 
             // commit an entity to the store to track information
             var ent = store.Commit(new PropertyEntity<string>("foo"));
@@ -35,30 +36,30 @@ namespace Vent.Test
             Assert.IsTrue(store.Undo());
             Assert.AreEqual("foo", ent.Value);
             Assert.IsTrue(ent.Id >= 0);
-            Assert.IsTrue(store.Contains(ent));
+            Assert.IsTrue(store.Registry.Contains(ent));
 
             // cannot move any further, foo has been removed from the store.
             Assert.IsFalse(store.Undo());
             Assert.AreEqual("foo", ent.Value);
             Assert.IsTrue(ent.Id == -1);
-            Assert.IsFalse(store.Contains(ent));
+            Assert.IsFalse(store.Registry.Contains(ent));
 
             // redo will seem to do nothing
             Assert.IsTrue(store.Redo());
             Assert.AreEqual("foo", ent.Value);
             Assert.IsTrue(ent.Id == -1);
-            Assert.IsFalse(store.Contains(ent));
+            Assert.IsFalse(store.Registry.Contains(ent));
 
             // until this point ... foo makes it back into the store
             Assert.IsTrue(store.Redo());
             Assert.AreEqual("foo", ent.Value);
             Assert.IsTrue(ent.Id >= 0);
-            Assert.IsTrue(store.Contains(ent));
+            Assert.IsTrue(store.Registry.Contains(ent));
 
             Assert.IsTrue(store.Redo());
             Assert.AreEqual("bar", ent.Value);
             Assert.IsTrue(ent.Id >= 0);
-            Assert.IsTrue(store.Contains(ent));
+            Assert.IsTrue(registry.Contains(ent));
 
             // reached the end
             Assert.IsFalse(store.Redo());
@@ -162,7 +163,7 @@ namespace Vent.Test
         public void RegisterRevertTest()
         {
             var store = new EntityHistory(new EntityRegistry());
-            var ent = store.Register(new PropertyEntity<string>("foo"));
+            var ent = store.Registry.Register(new PropertyEntity<string>("foo"));
 
             store.Revert(ent);
         }
@@ -172,7 +173,7 @@ namespace Vent.Test
         public void RegisterCommitThenRevertTest()
         {
             var store = new EntityHistory(new EntityRegistry());
-            var ent = store.Register(new PropertyEntity<string>("foo"));
+            var ent = store.Registry.Register(new PropertyEntity<string>("foo"));
 
             // this will add versioning to ent, allowing us to revert down the line
             store.Commit(ent);
@@ -189,18 +190,18 @@ namespace Vent.Test
         public void DeregisterWithRegisteredEntityTest()
         {
             var store = new EntityHistory(new EntityRegistry());
-            var ent = store.Register(new PropertyEntity<string>("foo"));
+            var ent = store.Registry.Register(new PropertyEntity<string>("foo"));
 
-            Assert.IsTrue(store.Contains(ent));
+            Assert.IsTrue(store.Registry.Contains(ent));
             Assert.IsTrue(store.GetVersionInfo(ent) == null);
             Assert.IsTrue(store.MutationCount == 0);
-            Assert.IsTrue(store.EntitiesInScope == 1);
+            Assert.IsTrue(store.Registry.EntitiesInScope == 1);
 
             store.Deregister(ent);
 
-            Assert.IsFalse(store.Contains(ent));
+            Assert.IsFalse(store.Registry.Contains(ent));
             Assert.IsTrue(store.MutationCount == 0);
-            Assert.IsTrue(store.EntitiesInScope == 0);
+            Assert.IsTrue(store.Registry.EntitiesInScope == 0);
         }
 
         [TestMethod]
@@ -209,27 +210,27 @@ namespace Vent.Test
             var store = new EntityHistory(new EntityRegistry());
             var ent = store.Commit(new PropertyEntity<string>("foo"));
 
-            Assert.IsTrue(store.Contains(ent));
+            Assert.IsTrue(store.Registry.Contains(ent));
 
             var versionInfo = store.GetVersionInfo(ent);
 
             Assert.IsTrue(versionInfo != null);
             Assert.IsTrue(store.MutationCount == 1);
-            Assert.IsTrue(store.EntitiesInScope == 4);
+            Assert.IsTrue(store.Registry.EntitiesInScope == 4);
 
             store.Deregister(ent);
 
-            Assert.IsFalse(store.Contains(ent));
+            Assert.IsFalse(store.Registry.Contains(ent));
             // can't get version info anymore...
             Assert.IsTrue(store.GetVersionInfo(ent) == null);
 
             // ... but it still exists in the store
-            Assert.IsTrue(store.Contains(versionInfo));
+            Assert.IsTrue(store.Registry.Contains(versionInfo));
             Assert.IsTrue(store.MutationCount == 2);
 
             // ent has been removed but the deregister mutation and exit version
             // has been added
-            Assert.IsTrue(store.EntitiesInScope == 5);
+            Assert.IsTrue(store.Registry.EntitiesInScope == 5);
         }
 
         [TestMethod]
@@ -238,29 +239,29 @@ namespace Vent.Test
             var store = new EntityHistory(new EntityRegistry());
             var ent = store.Commit(new PropertyEntity<string>("foo"));
 
-            Assert.IsTrue(store.Contains(ent));
+            Assert.IsTrue(store.Registry.Contains(ent));
 
             var versionInfo = store.GetVersionInfo(ent);
 
             Assert.IsTrue(versionInfo != null);
             Assert.IsTrue(store.MutationCount == 1);
-            Assert.IsTrue(store.EntitiesInScope == 4);
+            Assert.IsTrue(store.Registry.EntitiesInScope == 4);
 
             // move back to the point of the first commit (can't move back to the tail
             // because the entity doesn't exist at that point)
             store.Undo();
             store.Deregister(ent);
 
-            Assert.IsFalse(store.Contains(ent));
+            Assert.IsFalse(store.Registry.Contains(ent));
             // can't get version info anymore...
             Assert.IsTrue(store.GetVersionInfo(ent) == null);
 
             // ... but it no it doesn't exists in the store
-            Assert.IsFalse(store.Contains(versionInfo));
+            Assert.IsFalse(store.Registry.Contains(versionInfo));
             Assert.IsTrue(store.MutationCount == 0);
 
             // all is gone
-            Assert.IsTrue(store.EntitiesInScope == 0);
+            Assert.IsTrue(store.Registry.EntitiesInScope == 0);
         }
 
         [TestMethod]
