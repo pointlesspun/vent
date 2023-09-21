@@ -189,7 +189,7 @@ namespace Vent.Test
                     (store) =>
                     {
                         var count = randomSelection.Next(1, store.MutationCount);
-                        logFunction?.Invoke($"{UndoManyActionName} ({count})");
+                        logFunction?.Invoke($"{UndoManyActionName} ({count}) -> new mutation index: {Math.Max(-1, store.CurrentMutation - count)}");
                         store.Undo(count);
                         
                     },
@@ -201,7 +201,7 @@ namespace Vent.Test
                     (store) =>
                     {
                         var count = randomSelection.Next(1, store.MutationCount);
-                        logFunction?.Invoke($"{RedoManyActionName} ({count})");
+                        logFunction?.Invoke($"{RedoManyActionName} ({count}) -> new mutation index: {Math.Min(store.MutationCount, store.CurrentMutation + count)}");
                         store.Redo(count);
                     },
                     (store) => store.MutationCount > 3 && store.CurrentMutation < store.MutationCount - 3

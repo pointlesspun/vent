@@ -75,8 +75,7 @@ namespace Vent
             
             builder.AppendLine($"Mutations: {store.CurrentMutation} / {store.MutationCount}");
 
-            var mutations = store.Where( e => e is CommitEntity)
-                                    .Cast<CommitEntity>()
+            var mutations = store.Registry.GetEntitiesOf<CommitEntity>()
                                     .OrderBy( m => m.TimeStamp)
                                     .ToList();
 

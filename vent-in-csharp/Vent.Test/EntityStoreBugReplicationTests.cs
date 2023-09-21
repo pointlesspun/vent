@@ -1,6 +1,7 @@
-﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+﻿
+using Vent.PropertyEntities;
+/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
 /// (c) Pointlesspun
-
 namespace Vent.Test
 {
 
@@ -89,6 +90,30 @@ namespace Vent.Test
             store.EndMutationGroup();
             // this would cause an exception
             store.Undo();
+        }
+
+        /*
+         * Replicate
+         * undo many (5) -> new mutation index: -1
+         * Remove oldest 0/1 mutation(s)
+         * redo many (5) -> new mutation index: 4
+         */
+        [TestMethod]
+        public void RedoWithDeregisterAtSlot0Test()
+        {
+            var store = new EntityStore();
+            var ent = store.Commit(new StringEntity("foo"));
+            store.Deregister(ent);
+            store.ToTail();
+            store.DeleteMutation(0);
+            
+            // first redo just moves the mutation to 0
+            store.Redo();
+
+            // this tries to redo deregister but the entity currently does not exist
+            // in the store because of the commit which #1 during the undo
+            // removed its entity from scope #2 then got deleted
+            store.Redo();
         }
     }
 }

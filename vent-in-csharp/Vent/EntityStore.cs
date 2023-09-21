@@ -15,12 +15,20 @@ namespace Vent
     {
         private int _entityId = 0;
 
-        private readonly Dictionary<int, IEntity> _entities = new();
+        private EntityRegistry _entities = new();
+
+
+        public EntityRegistry Registry
+        {
+            get => _entities;
+            set => _entities = value;   
+        }
 
         /// <summary>
         /// Associates an entity by id with its versionInfo
         /// </summary>
         private readonly Dictionary<int, VersionInfo> _entityVersionInfo = new();
+        
 
         private readonly List<IMutation> _mutations = new();
 
@@ -32,12 +40,12 @@ namespace Vent
         /// Number of entities in this store. Note this iterates over all 
         /// occupied entity slots so it might be rather slow.
         /// </summary>
-        public int EntitiesInScope => _entities.Values.Where(e => e != null).Count();
+        public int EntitiesInScope => _entities.EntitiesInScope;
 
         /// <summary>
         /// Number of slots in use
         /// </summary>
-        public int SlotCount => _entities.Count;
+        public int SlotCount => _entities.SlotCount;
 
 
         /// <summary>
@@ -72,9 +80,9 @@ namespace Vent
 
         public int MaxEntitySlots
         {
-            get;
-            set;
-        } = int.MaxValue;
+            get => _entities.MaxEntitySlots;
+            set => _entities.MaxEntitySlots = value;
+        }
 
         /// <summary>
         /// Returns the Nth mutation applied to this store
@@ -100,7 +108,7 @@ namespace Vent
         /// Returns the id of the next committed entity IF that entity
         /// is not yet in the store.
         /// </summary>
-        public int NextEntityId => _entityId;
+        public int NextEntityId => _entities.NextEntityId;
 
         /// <summary>
         /// Check if the given entity maintains versioninfo
@@ -115,22 +123,7 @@ namespace Vent
         /// </summary>
         /// <param name="id"></param>
         /// <returns>The entity with the given id or null if no such entity exists</returns>
-        public IEntity this[int id]
-        {
-            get
-            {
-                if (_entities.TryGetValue(id, out var entity))
-                {
-                    if (entity.Id >= 0)
-                    {
-                        return entity;
-                    }
-                    // else entity has been removed but still being tracked
-                }
-
-                return null;
-            }
-        }
+        public IEntity this[int id] => _entities[id];
 
         /// <summary>
         /// Register an entity without adding versioning
@@ -138,54 +131,10 @@ namespace Vent
         /// <typeparam name="T"></typeparam>
         /// <param name="entity"></param>
         /// <returns>the registered entity</returns>
-        public T Register<T>(T entity) where T : IEntity
-        {
-            // test preconditions
-            Contract.Requires<ArgumentException>(entity != null, "Cannot register a null entity.");
-            Contract.Requires<InvalidOperationException>(!Contains(entity), "Cannot register an entity that is already in the store.");
-            Contract.Requires<InvalidOperationException>(_entities.Count < MaxEntitySlots, "Cannot register an entity when the maxEntitySlots has been reached.");
-
-            // wrap around 
-            if (_entityId >= MaxEntitySlots)
-            {
-                _entityId = 0;
-            }
-
-            var attempts = 0;
-            // find first available slot
-            while (_entities.ContainsKey(_entityId))
-            {
-                _entityId++;
-
-                if (_entityId >= MaxEntitySlots)
-                {
-                    _entityId = 0;
-                }
-
-                attempts++;
-
-                if (attempts == MaxEntitySlots)
-                {
-                    throw new OutOfMemoryException("No more entity slots available");
-                }
-            }
-
-            entity.Id = _entityId;
-            _entityId++;
-            _entities[entity.Id] = entity;
-
-            return entity;
-        }
-
-        public void RestoreEntity(IEntity entity, int id)
-        {
-            Contract.Requires<ArgumentException>(id >= 0 && id < MaxEntitySlots, $"cannot restore an entity with an id ({id}) outside the valid id range ( 0..{MaxEntitySlots})");
-            Contract.Requires<InvalidOperationException>(!_entities.ContainsKey(id), $"Trying to restore an entity in a slot ({id}) that is already occupied.");
-
-            _entities[id] = entity;
-            entity.Id = id;
-        }
-
+        public T Register<T>(T entity) where T : class, IEntity =>  _entities.Register<T>(entity);
+        
+        public void RestoreEntity(IEntity entity, int id) => _entities.AssignEntityToSlot(entity, id);
+        
         public void RestoreSettings(int id, int currentMutation, int openGroupCount)
         {
             Contract.Requires<ArgumentException>(id >= 0 && id < MaxEntitySlots, $"cannot set an id ({id}) outside the valid id range ( 0..{MaxEntitySlots})");
@@ -198,18 +147,12 @@ namespace Vent
         public void RestoreTransientProperties()
         {
             _mutations.Clear();
-            _mutations.AddRange(_entities.Values
-                            .Where(e => e is IMutation)
-                            .Cast<IMutation>()
+            _mutations.AddRange(_entities.GetEntitiesOf<IMutation>()
                             .OrderBy(m => m.TimeStamp).ToList());
 
             _entityVersionInfo.Clear();
 
-            var versionInfoCollection = _entities.Values
-                            .Where(e => e is VersionInfo)
-                            .Cast<VersionInfo>()
-                            .ToList();
-
+            var versionInfoCollection = _entities.GetEntitiesOf<VersionInfo>().ToList();
 
             foreach (var versionInfo in versionInfoCollection) 
             {
@@ -246,15 +189,13 @@ namespace Vent
                     AddMutation(new DeregisterEntity(entity, lastVersion));
 
                     // keep this slot reserved
-                    _entities[entity.Id] = null;
+                    _entities.RemoveEntityFromSlot(entity);
                 }
             }
             else
             {
-                _entities.Remove(entity.Id);
+                _entities.Deregister(entity);
             }
-            
-            entity.Id = -1;
         }
 
         /// <summary>
@@ -287,7 +228,7 @@ namespace Vent
         /// <typeparam name="T"></typeparam>
         /// <param name="entity"></param>
         /// <returns></returns>
-        public T Commit<T>(T entity) where T : IEntity
+        public T Commit<T>(T entity) where T : class, IEntity
         {
             Contract.Requires<ArgumentException>(entity != null);
 
@@ -315,7 +256,7 @@ namespace Vent
                 // entity is not yet added to the store?
                 if (!Contains(entity))
                 {
-                    Register(entity);
+                    _entities.Register(entity);
                 }
 
                 newVersion = AddVersioning(entity);
@@ -469,7 +410,7 @@ namespace Vent
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return _entities.Values.GetEnumerator();
+            return _entities.GetEnumerator();
         }
 
 
@@ -478,13 +419,7 @@ namespace Vent
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        public bool Contains(IEntity entity)
-        {
-            return entity != null
-                && entity.Id >= 0
-                && _entities.TryGetValue(entity.Id, out IEntity other)
-                && other == entity;
-        }
+        public bool Contains(IEntity entity) => _entities.Contains(entity);
 
         public void DeleteMutation(int index)
         {
@@ -585,7 +520,7 @@ namespace Vent
             mutation.MutatedEntity.Id = -1;
 
             // keep the slot occupied
-            _entities[mutation.MutatedEntityId] = null;
+            _entities.RemoveEntityFromSlot(mutation.MutatedEntityId);
         }
 
         private IEntity ResolveMutatedEntity(MutateEntity mutation, VersionInfo versionInfo)
@@ -595,7 +530,7 @@ namespace Vent
                 // session contains the mutated version
                 return mutation.MutatedEntity;
             }
-            else if (_entities.TryGetValue(mutation.MutatedEntityId, out var ent))
+            else if (_entities.EntitySlots.TryGetValue(mutation.MutatedEntityId, out var ent))
             {
                 // mutated version has left scope but was still in the store
                 return ent;
@@ -603,10 +538,7 @@ namespace Vent
             else
             {
                 // entity may have left the scope, create clone a new version
-                var baseVersion = (IEntity) versionInfo.Versions[0].Clone();
-                baseVersion.Id = mutation.MutatedEntityId;
-                _entities[mutation.MutatedEntityId] = baseVersion;
-                return baseVersion;
+                return _entities.AssignEntityToSlot((IEntity)versionInfo.Versions[0].Clone(), mutation.MutatedEntityId);
             }
         }
 
@@ -630,8 +562,8 @@ namespace Vent
             var versionInfo = _entityVersionInfo[mutation.MutatedEntityId];
 
             // remove the mutation and entity version from the entity store
-            _entities.Remove(mutation.Id);
-            _entities.Remove(mutation.AssociatedVersion.Id);
+            _entities.Deregister(mutation);
+            _entities.Deregister(mutation.AssociatedVersion.Id);
 
             // remove the version from the entity's version records
             versionInfo.RemoveVersion(mutation.AssociatedVersion);
@@ -646,14 +578,16 @@ namespace Vent
 
                 // entity may already have been removed and the slot was just occupied,
                 // so the head is null
+                // xxx probably don't need this anymore
                 if (headEntity != null)
                 {
                     headEntity.Id = -1;
                 }
 
                 _entityVersionInfo.Remove(versionInfo.HeadId);
-                _entities.Remove(versionInfo.Id);
-                _entities.Remove(versionInfo.HeadId);
+                _entities.Deregister(versionInfo.Id);
+
+                _entities.Deregister(versionInfo.HeadId);
             }
             
             // check if the head entity needs to be added to the registry again
@@ -663,11 +597,11 @@ namespace Vent
                 && versionInfo.CurrentVersion >= 0
                 && mutation is DeregisterEntity deregisterEntity)
             {
-                if (!_entities.TryGetValue(versionInfo.HeadId, out headEntity) || headEntity == null)
+                if (!_entities.EntitySlots.TryGetValue(versionInfo.HeadId, out headEntity) || headEntity == null)
                 {
                     headEntity = deregisterEntity.MutatedEntity;
                     versionInfo.Revert(headEntity);
-                    _entities[headEntity.Id] = headEntity;
+                    _entities.Register(headEntity);
                 }
             }
         }       
@@ -694,7 +628,7 @@ namespace Vent
                         // simply remove them, the rest of the group will be removed eventually
                         // in this loop
                         _mutations.RemoveAt(i);
-                        _entities.Remove(mutation.Id);
+                        _entities.Deregister(mutation.Id);
                     }
                     else if (mutation is MutateEntity)
                     {
@@ -736,7 +670,7 @@ namespace Vent
             // (ie into the entity registry)
             if (mutation is DeregisterEntity)
             {
-                _entities[mutation.MutatedEntityId] = entity;
+                _entities.AssignEntityToSlot(entity, mutation.MutatedEntityId);
             }
 
             versionInfo.Undo(entity);
@@ -752,13 +686,22 @@ namespace Vent
             // redo deregister/commit
             if (mutation is DeregisterEntity)
             {
-                // keep this slot reserved
-                _entities[entity.Id] = null;
+                // keep this slot reserved (ie set it to null as the deregister would do)
+                // in some cases it might already be null (see RedoWithDeregisterAtSlot0Test for the complete case)
+                // so check if this is already the case 
+                if (_entities.EntitySlots.TryGetValue(entity.Id, out var existingEntity))
+                {
+                    if (existingEntity != null)
+                    {
+                        _entities.RemoveEntityFromSlot(entity);
+                    }
+                }
+
                 entity.Id = -1;
             }
             else if (mutation is CommitEntity && !Contains(entity))
             {
-                _entities[entity.Id] = entity;
+                _entities.AssignEntityToSlot(entity, entity.Id);
             }
         }
         
@@ -828,12 +771,12 @@ namespace Vent
                     case BeginMutationGroup _:
                         groupCount++;
                         _mutations.RemoveAt(mutationIndex);
-                        _entities.Remove(mutation.Id);
+                        _entities.Deregister(mutation.Id);
                         break;
                     case EndMutationGroup _:
                         groupCount--;
                         _mutations.RemoveAt(mutationIndex);
-                        _entities.Remove(mutation.Id);
+                        _entities.Deregister(mutation.Id);
                         break;
                     case MutateEntity _:
                         DeleteMutateEntityMutation(mutationIndex);

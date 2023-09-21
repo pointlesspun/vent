@@ -1041,8 +1041,16 @@ namespace Vent.Test
             store.Deregister(ent1);
             var ent2 = store.Commit(new PropertyEntity<string>("qaz"));
 
+            // ent1 initial commit "foo" = 4
+            // commit "bar" = +2 (6)
+            // deregister = +2, -1 (7)
+            // ent2 = +=4 (11)
+            Assert.IsTrue(store.EntitiesInScope == 11);
+
             // verify pre-state
             store.ToTail();
+
+            // should have deregistered ent2 so entities in scope should be 11            
             Assert.IsTrue(store.EntitiesInScope == 10);
             Assert.IsTrue(store.CurrentMutation == -1);
             Assert.IsTrue(store.MutationCount == 4);

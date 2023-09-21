@@ -8,7 +8,7 @@ namespace Vent
 
         private Dictionary<int, IEntity> _entities = new();
 
-        public virtual Dictionary<int, IEntity> Entities
+        public virtual Dictionary<int, IEntity> EntitySlots
         {
             get => _entities;
             set => _entities = value;
@@ -48,7 +48,7 @@ namespace Vent
             {
                 if (_entities.TryGetValue(id, out var entity))
                 {
-                    if (entity.Id >= 0)
+                    if (entity != null && entity.Id >= 0)
                     {
                         return entity;
                     }
@@ -122,9 +122,29 @@ namespace Vent
             entity.Id = -1;
         }
 
+        public void Deregister(int id)
+        {
+            if (_entities.TryGetValue(id, out var entity))
+            {
+                _entities.Remove(id);
+
+                // slot may just have been occupied
+                if (entity != null)
+                {
+                    entity.Id = -1;
+                }
+            }
+            else
+            {
+                // entities did not contain id            
+                Contract.Requires<ArgumentException>(false);
+            }
+        }
+
         /// <summary>
         /// Assign the given entity to the given slot. If an existing entity 
-        /// was occupying the slot, it will be removed and its id set to -1
+        /// was occupying the slot, it will be removed and its id set to -1.
+        /// If the slot is not occupied, the entity will be simply assigned.
         /// </summary>
         /// <param name="entity"></param>
         public T AssignEntityToSlot<T>(T entity, int slotId) where T : class, IEntity
@@ -132,7 +152,6 @@ namespace Vent
             Contract.Requires<ArgumentException>(entity != null);
             Contract.Requires<ArgumentException>(entity != this, "Cannot register self.");
             Contract.Requires<InvalidOperationException>(!Contains(entity));
-            Contract.Requires<InvalidOperationException>(_entities.ContainsKey(slotId));
             
             if (_entities.TryGetValue(slotId, out var existingEntity))
             {
@@ -164,6 +183,28 @@ namespace Vent
             entity.Id = -1;
         }
 
+        public void RemoveEntityFromSlot(int id)
+        {
+            Contract.Requires<ArgumentException>(id >= 0, $"Cannot remove entity from slot using id {id}.");
+            
+            if (_entities.TryGetValue(id, out var entity))
+            {
+                Contract.Requires<InvalidOperationException>(entity != null, $"Trying to remove entity from slot at {id}, but there was no entity.");
+                _entities[id] = null;
+                entity.Id = -1;
+            }
+            else
+            {
+                // entities did not contain id            
+                Contract.Requires<ArgumentException>(false);
+            }
+        }
+
+        public IEnumerable<T> GetEntitiesOf<T>() where T : class, IEntity
+        {
+            return _entities.Values.Where(e => e is T).Cast<T>();
+        }
+
         public IEnumerator<KeyValuePair<int, IEntity>> GetEnumerator()
         {
             return _entities.GetEnumerator();
@@ -191,11 +232,11 @@ namespace Vent
         {
             var result = (EntityRegistry) base.Clone();
 
-            result.Entities = new Dictionary<int, IEntity>(); 
+            result.EntitySlots = new Dictionary<int, IEntity>(); 
 
             foreach (var kvp in _entities) 
             {
-                result.Entities[kvp.Key] = (IEntity) kvp.Value.Clone();
+                result.EntitySlots[kvp.Key] = (IEntity) kvp.Value.Clone();
             }
 
             return result;

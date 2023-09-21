@@ -171,7 +171,7 @@ namespace Vent.Test
 
             var rng = new Random(seed);
 
-            try
+           // try
             {
                 for (var i = 0; i < iterations; i++)
                 {
@@ -202,12 +202,12 @@ namespace Vent.Test
                 store.ToTail();
                 store.ToHead();
             }
-            catch( Exception e)
+            /*catch( Exception e)
             {
                 Debug.WriteLine("Exception " + e);
                 Debug.WriteLine("Store:\n " + store.ToStateString());
                 Assert.Fail();
-            }
+            }*/
 
             return store;
         }
