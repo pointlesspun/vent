@@ -9,11 +9,11 @@ namespace Vent.Test
 
         public int UpperBound { get; set; } = 1;
             
-        public Action<EntityStore> Mutation { get; set; }
+        public Action<EntityHistory> Mutation { get; set; }
 
-        public Func<EntityStore, bool> MeetsRequirements { get; set; }
+        public Func<EntityHistory, bool> MeetsRequirements { get; set; }
 
-        public Func<EntityStore, int> DynamicWeight { get; set; }
+        public Func<EntityHistory, int> DynamicWeight { get; set; }
 
         public SmokeTestAction()
         {
@@ -24,9 +24,9 @@ namespace Vent.Test
         public SmokeTestAction(
             String name,
             int upperBound, 
-            Action<EntityStore> mutation, 
-            Func<EntityStore, bool> meetsRequirements,
-            Func<EntityStore, int> weightFunction = null)
+            Action<EntityHistory> mutation, 
+            Func<EntityHistory, bool> meetsRequirements,
+            Func<EntityHistory, int> weightFunction = null)
         {
             Name = name;    
             UpperBound = upperBound;
@@ -36,13 +36,13 @@ namespace Vent.Test
         }
 
 
-        public int DefaultWeightFunction(EntityStore entityStore)  => UpperBound;
+        public int DefaultWeightFunction(EntityHistory entityStore)  => UpperBound;
 
         public override string ToString() => Name;  
         
 
 
-        public static SmokeTestAction SelectAction(List<SmokeTestAction> actions, EntityStore entityStore, Random randomSelection)
+        public static SmokeTestAction SelectAction(List<SmokeTestAction> actions, EntityHistory entityStore, Random randomSelection)
         {
             var eligableActions = actions.Where(a => a.MeetsRequirements == null || a.MeetsRequirements(entityStore)).ToList();
             var actionWeights = eligableActions.Select(a => a.DynamicWeight(entityStore)).ToList();
@@ -71,7 +71,7 @@ namespace Vent.Test
             return null;
         }
 
-        private static string GetCurrentMutationText(EntityStore entityStore)
+        private static string GetCurrentMutationText(EntityHistory entityStore)
         {
             if (entityStore.CurrentMutation < 0)
             {

@@ -27,7 +27,7 @@ namespace Vent.Test
                 }
             };
 
-            SmokeTestAction actionSelection(EntityStore store) => SmokeTestAction.SelectAction(actions, store, new Random(1));
+            SmokeTestAction actionSelection(EntityHistory store) => SmokeTestAction.SelectAction(actions, store, new Random(1));
 
             var store = RunSmokeTest(1, -1, 42, actionSelection);
 
@@ -49,7 +49,7 @@ namespace Vent.Test
             };
 
             var rng = new Random(1);
-            SmokeTestAction actionSelection(EntityStore store) => SmokeTestAction.SelectAction(actions, store, rng);
+            SmokeTestAction actionSelection(EntityHistory store) => SmokeTestAction.SelectAction(actions, store, rng);
 
             var store = RunSmokeTest(100, -1, 3, actionSelection);
 
@@ -75,7 +75,7 @@ namespace Vent.Test
             var randomSelection = new Random(42);
             var actionSet = SmokeTestAction.CreateDefaultActionSet(randomSelection /*, (str) => Debug.WriteLine(str)*/);
 
-            SmokeTestAction actionSelection(EntityStore store) => SmokeTestAction.SelectAction(actionSet, store, randomSelection);
+            SmokeTestAction actionSelection(EntityHistory store) => SmokeTestAction.SelectAction(actionSet, store, randomSelection);
 
             // just try some random tests 
             var store = RunSmokeTest(50000, -1, 28371, actionSelection, true);
@@ -107,7 +107,7 @@ namespace Vent.Test
                             .CreateDefaultActionSet(randomSelection/*, str => Debug.WriteLine(str)*/)
                             .AddGroupActions(randomSelection /*, str => Debug.WriteLine(str)*/, maxGroups: 5);
 
-            SmokeTestAction actionSelection(EntityStore store) => SmokeTestAction.SelectAction(actionSet, store, randomSelection);
+            SmokeTestAction actionSelection(EntityHistory store) => SmokeTestAction.SelectAction(actionSet, store, randomSelection);
 
             // run various smoke tests which different seeds
             var store = RunSmokeTest(20000, -1, 2837, actionSelection, true, 100);
@@ -154,15 +154,15 @@ namespace Vent.Test
             }
         }
 
-        private EntityStore RunSmokeTest(
+        private EntityHistory RunSmokeTest(
             int iterations, 
             int maxMutations, 
             int seed,
-            Func<EntityStore, SmokeTestAction> selectAction,
+            Func<EntityHistory, SmokeTestAction> selectAction,
             bool deleteOutOfScopeVersions = false,
             int maxEntitySlots = int.MaxValue)
         {
-            var store = new EntityStore()
+            var store = new EntityHistory(new EntityRegistry())
             {
                 MaxMutations = maxMutations,
                 DeleteOutOfScopeVersions =  deleteOutOfScopeVersions,
@@ -212,17 +212,17 @@ namespace Vent.Test
             return store;
         }
 
-        private EntityStore RepeatUndoRedoInsertTest(
+        private EntityHistory RepeatUndoRedoInsertTest(
             int iterations,
             int entityCount,
             int maxMutations, 
             int undoCount,
             int redoCount,
             int insertCount,
-            EntityStore store= null,
+            EntityHistory store= null,
             bool spool = false)
         {
-            store ??= new EntityStore()
+            store ??= new EntityHistory(new EntityRegistry())
             {
                 MaxMutations = maxMutations,
             };

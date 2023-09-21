@@ -9,7 +9,7 @@ namespace Vent.Test
         [TestMethod]
         public void SmallSetWithRegisteredEntitiesOnly()
         {
-            var store = new EntityStore()
+            var store = new EntityHistory(new EntityRegistry())
             {
                 MaxEntitySlots = 3
             };
@@ -44,7 +44,7 @@ namespace Vent.Test
         [ExpectedException(typeof(InvalidOperationException))]
         public void DeregisterComittedEntityTest()
         {
-            var store = new EntityStore()
+            var store = new EntityHistory(new EntityRegistry())
             {
                 MaxEntitySlots = 6
             };

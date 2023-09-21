@@ -11,7 +11,7 @@ namespace Vent
         /// Move's the store mutation position to the tail (-1)
         /// </summary>
         /// <param name="store"></param>
-        public static void ToTail(this EntityStore store)
+        public static void ToTail(this EntityHistory store)
         {
             while (store.Undo()) { }
         }
@@ -20,7 +20,7 @@ namespace Vent
         /// Move's the store mutation position to the head (store.MutationCount)
         /// </summary>
         /// <param name="store"></param>
-        public static void ToHead(this EntityStore store)
+        public static void ToHead(this EntityHistory store)
         {
             while (store.Redo()) { }
         }
@@ -31,7 +31,7 @@ namespace Vent
         /// <param name="store"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public static bool Undo(this EntityStore store, int count)
+        public static bool Undo(this EntityHistory store, int count)
         {
             for (int i = 0; count < 0 || i < count; i++)
             {
@@ -50,7 +50,7 @@ namespace Vent
         /// <param name="store"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public static bool Redo(this EntityStore store, int count)
+        public static bool Redo(this EntityHistory store, int count)
         {
             for (int i = 0; count < 0 || i < count; i++)
             {
@@ -68,7 +68,7 @@ namespace Vent
         /// </summary>
         /// <param name="store"></param>
         /// <returns></returns>
-        public static string ToStateString(this EntityStore store)
+        public static string ToStateString(this EntityHistory store)
         {
             var builder = new StringBuilder();
 
@@ -110,7 +110,7 @@ namespace Vent
         /// <param name="rng"></param>
         /// <param name="needsVersioning"></param>
         /// <returns></returns>
-        public static T SelectRandomEntity<T>(this EntityStore store, Random rng, bool needsVersioning = true ) where T : IEntity
+        public static T SelectRandomEntity<T>(this EntityHistory store, Random rng, bool needsVersioning = true ) where T : IEntity
         {
             Contract.NotNull(rng);
             

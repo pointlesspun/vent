@@ -7,7 +7,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Vent.ToJson
 {
-    public class StoreConverter : JsonConverter<EntityStore>
+    public class StoreConverter : JsonConverter<EntityHistory>
     {
         private const string EntityInstancesTag = "entities";
         private const string StoreConfigTag = "storeProperties";
@@ -46,17 +46,17 @@ namespace Vent.ToJson
             return this;
         }
 
-        public override EntityStore ReadJson(
+        public override EntityHistory ReadJson(
             JsonReader reader,
             Type objectType,
-            EntityStore existingValue,
+            EntityHistory existingValue,
             bool hasExistingValue,
             JsonSerializer serializer)
         {
-            return ReadJson(reader, hasExistingValue && existingValue != null ? existingValue : new EntityStore(), serializer);
+            return ReadJson(reader, hasExistingValue && existingValue != null ? existingValue : new EntityHistory(new EntityRegistry()), serializer);
         }
 
-        public override void WriteJson(JsonWriter writer, EntityStore store, JsonSerializer serializer)
+        public override void WriteJson(JsonWriter writer, EntityHistory store, JsonSerializer serializer)
         {
             writer.WriteStartObject();
 
@@ -66,7 +66,7 @@ namespace Vent.ToJson
             writer.WriteEndObject();
         }
 
-        private EntityStore ReadJson(JsonReader reader, EntityStore store, JsonSerializer serializer)
+        private EntityHistory ReadJson(JsonReader reader, EntityHistory store, JsonSerializer serializer)
         {
             if (reader.TokenType != JsonToken.None && reader.TokenType !=  JsonToken.Null)
             { 
@@ -84,7 +84,7 @@ namespace Vent.ToJson
             throw new JsonException($"Trying to read EntityStore config but the current token is null.");
         }
 
-        private static void ReadConfig(JToken config, EntityStore store)
+        private static void ReadConfig(JToken config, EntityHistory store)
         {
             var version = (string) config[nameof(store.Version)];
 
@@ -103,7 +103,7 @@ namespace Vent.ToJson
             store.DeleteOutOfScopeVersions = (bool)config[nameof(store.DeleteOutOfScopeVersions)];
         }
 
-        private void ReadEntityInstances(JToken instances, EntityStore store)
+        private void ReadEntityInstances(JToken instances, EntityHistory store)
         {
             foreach ( var kvp in ((JObject)instances).Properties() ) 
             {
@@ -129,7 +129,7 @@ namespace Vent.ToJson
             }
         }
 
-        private void ReadEntityProperties(JToken properties, EntityStore store)
+        private void ReadEntityProperties(JToken properties, EntityHistory store)
         {
             foreach (var kvp in ((JObject)properties).Properties())
             {
@@ -149,14 +149,14 @@ namespace Vent.ToJson
             }
         }
 
-        private void ReadProperty(KeyValuePair<string, JToken> property, EntityStore store, IEntity entity)
+        private void ReadProperty(KeyValuePair<string, JToken> property, EntityHistory store, IEntity entity)
         {
             var propertyInfo = entity.GetType().GetProperty(property.Key);
 
             ReadValue(property.Value, store, entity, propertyInfo);
         }
 
-        private void ReadValue(JToken value, EntityStore store, IEntity entity, PropertyInfo info)
+        private void ReadValue(JToken value, EntityHistory store, IEntity entity, PropertyInfo info)
         {
             var type = info.PropertyType;
 
@@ -208,7 +208,7 @@ namespace Vent.ToJson
             }
         }
 
-        private static void WriteStoreProperties(JsonWriter writer, EntityStore store)
+        private static void WriteStoreProperties(JsonWriter writer, EntityHistory store)
         {
             writer.WriteObjectValues(StoreConfigTag, store,
                     nameof(store.Version),
@@ -220,7 +220,7 @@ namespace Vent.ToJson
                     nameof(store.OpenGroupCount));
         }
 
-        private static void WriteEntityInstances(JsonWriter writer, EntityStore store)
+        private static void WriteEntityInstances(JsonWriter writer, EntityHistory store)
         {
             writer.WritePropertyName(EntityInstancesTag);
             writer.WriteStartObject();

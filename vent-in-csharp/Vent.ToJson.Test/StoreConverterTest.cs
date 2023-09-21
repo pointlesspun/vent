@@ -13,7 +13,7 @@ namespace Vent.ToJson.Test
         [TestMethod]
         public void WriteToJsonTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
 
             var ent1 = store.Commit(new StringEntity("foo-1"));
             var ent2 = store.Commit(new StringEntity("foo-2"));
@@ -27,7 +27,7 @@ namespace Vent.ToJson.Test
 
             Debug.WriteLine(json);
 
-            var storeCopy = JsonConvert.DeserializeObject<EntityStore>(json, converter);
+            var storeCopy = JsonConvert.DeserializeObject<EntityHistory>(json, converter);
 
             Assert.IsTrue(store.CurrentMutation == storeCopy.CurrentMutation);
             Assert.IsTrue(store.MutationCount == storeCopy.MutationCount);

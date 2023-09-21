@@ -13,7 +13,7 @@ namespace Vent.Test
         public void BasicCommitUndoExample()
         {
             // create a new store
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
 
             // commit an entity to the store to track information
             var ent = store.Commit(new PropertyEntity<string>("foo"));
@@ -68,7 +68,7 @@ namespace Vent.Test
         public void CutOffTest()
         {
             // create a new store
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
 
             // commit an entity to the store to track information
             var ent = store.Commit(new PropertyEntity<string>("foo"));
@@ -116,7 +116,7 @@ namespace Vent.Test
         public void RevertTest()
         {
             // create a new store
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
 
             // commit an entity to the store to track information
             var ent = store.Commit(new PropertyEntity<string>("foo"));
@@ -161,7 +161,7 @@ namespace Vent.Test
         [ExpectedException(typeof(InvalidOperationException))]
         public void RegisterRevertTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent = store.Register(new PropertyEntity<string>("foo"));
 
             store.Revert(ent);
@@ -171,7 +171,7 @@ namespace Vent.Test
         [TestMethod]
         public void RegisterCommitThenRevertTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent = store.Register(new PropertyEntity<string>("foo"));
 
             // this will add versioning to ent, allowing us to revert down the line
@@ -188,7 +188,7 @@ namespace Vent.Test
         [TestMethod]
         public void DeregisterWithRegisteredEntityTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent = store.Register(new PropertyEntity<string>("foo"));
 
             Assert.IsTrue(store.Contains(ent));
@@ -206,7 +206,7 @@ namespace Vent.Test
         [TestMethod]
         public void DeregisterWithCommittedEntityTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent = store.Commit(new PropertyEntity<string>("foo"));
 
             Assert.IsTrue(store.Contains(ent));
@@ -235,7 +235,7 @@ namespace Vent.Test
         [TestMethod]
         public void DeregisterWithRemovedEntityTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent = store.Commit(new PropertyEntity<string>("foo"));
 
             Assert.IsTrue(store.Contains(ent));
@@ -266,7 +266,7 @@ namespace Vent.Test
         [TestMethod]
         public void GroupTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent = store.Commit(new PropertyEntity<string>("foo"));
 
             store.BeginMutationGroup();

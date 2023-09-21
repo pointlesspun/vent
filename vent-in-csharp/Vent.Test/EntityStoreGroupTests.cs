@@ -9,7 +9,7 @@ namespace Vent.Test
         [TestMethod]
         public void BeginGroupAndUndoTests()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
 
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
 
@@ -41,7 +41,7 @@ namespace Vent.Test
         [TestMethod]
         public void BeginGroupUndoAndRedoTests()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
 
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
 
@@ -76,7 +76,7 @@ namespace Vent.Test
         [TestMethod]
         public void BeginGroupUndoAndRedoInnerGroupTests()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
 
             var ent1 = store.Commit(new PropertyEntity<string>("foo1"));
             var ent2 = store.Commit(new PropertyEntity<string>("foo2"));
@@ -139,7 +139,7 @@ namespace Vent.Test
         [TestMethod]
         public void ExceedMaxMutationCountTest()
         {
-            var store = new EntityStore()
+            var store = new EntityHistory(new EntityRegistry())
             {
                 MaxMutations = 4
             };
@@ -172,7 +172,7 @@ namespace Vent.Test
         [ExpectedException(typeof(InvalidOperationException))]
         public void ExceedMaxMutationCountWithGroupTest()
         {
-            var store = new EntityStore()
+            var store = new EntityHistory(new EntityRegistry())
             {
                 MaxMutations = 3
             };
@@ -192,7 +192,7 @@ namespace Vent.Test
         [ExpectedException(typeof(InvalidOperationException))]
         public void EndWithoutBeginShouldThrowExceptionTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
 
             store.EndMutationGroup();
         }
@@ -206,7 +206,7 @@ namespace Vent.Test
         [TestMethod]
         public void RemoveFutureMutationAfterBeginGroupTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
 
             var ent1 = store.Commit(new PropertyEntity<string>("foo0"));
             var ent2 = store.Commit(new PropertyEntity<string>("bar0"));
@@ -241,7 +241,7 @@ namespace Vent.Test
         [TestMethod]
         public void RemoveOldestGroupMutationTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
 
             var ent1 = new PropertyEntity<string>("foo");
             var ent2 = new PropertyEntity<string>("bar");
@@ -278,7 +278,7 @@ namespace Vent.Test
         [TestMethod]
         public void RemoveOldestEmptyGroupMutationTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
 
             store.BeginMutationGroup();
             store.EndMutationGroup();
@@ -300,7 +300,7 @@ namespace Vent.Test
         [TestMethod]
         public void ShouldBeAbleToRemoveClosedGroupTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
 
             store.BeginMutationGroup();
             store.EndMutationGroup();
@@ -328,7 +328,7 @@ namespace Vent.Test
         [ExpectedException(typeof(InvalidOperationException))]
         public void ShouldNotBeAbleToRemoveOpenGroupTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
 
             store.BeginMutationGroup();
 

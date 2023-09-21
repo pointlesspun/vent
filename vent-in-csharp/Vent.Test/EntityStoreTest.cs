@@ -9,7 +9,7 @@ namespace Vent.Test
         [TestMethod]
         public void RegisterDegisterPropertyEntityTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
 
             var ent = store.Register(new PropertyEntity<string>("foo"));
 
@@ -24,7 +24,7 @@ namespace Vent.Test
         [TestMethod]
         public void RegisterDegisterVersionedPropertyEntityTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent = store.Commit(new PropertyEntity<string>("foo"));
 
             // 1 for the entity, one for the version info 1 for 
@@ -83,7 +83,7 @@ namespace Vent.Test
         [TestMethod]
         public void RegisterUndoTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
 
             var ent = store.Commit(new PropertyEntity<string>()
             {
@@ -111,7 +111,7 @@ namespace Vent.Test
         [TestMethod]
         public void RegisterCommitUndoTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
 
             var ent = store.Commit(new PropertyEntity<string>()
             {
@@ -138,7 +138,7 @@ namespace Vent.Test
         [TestMethod]
         public void RegisterCommitUndoRedoTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
 
             var ent = store.Commit(new PropertyEntity<string>()
             {
@@ -204,7 +204,7 @@ namespace Vent.Test
         [TestMethod]
         public void CutOffTest()
         {
-            var store = new EntityStore()
+            var store = new EntityHistory(new EntityRegistry())
             {
                 MaxMutations = 2
             };
@@ -229,7 +229,7 @@ namespace Vent.Test
         [TestMethod]
         public void CutOffAndUndoRedoTest()
         {
-            var store = new EntityStore()
+            var store = new EntityHistory(new EntityRegistry())
             {
                 MaxMutations = 2
             };
@@ -257,7 +257,7 @@ namespace Vent.Test
         [TestMethod]
         public void UndoAndCommitTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent = store.Commit(new PropertyEntity<string>("foo"));
             var values = new[] { "bar", "qez", "xim" };
 
@@ -301,7 +301,7 @@ namespace Vent.Test
         [TestMethod]
         public void UndoAllAndCommitTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent = store.Commit(new PropertyEntity<string>("foo"));
             var values = new[] { "bar", "qez", "xim" };
 
@@ -350,7 +350,7 @@ namespace Vent.Test
         [TestMethod]
         public void UndoAllAndRegisterTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
 
             var values = new[] { "bar", "qez", "xim" };
@@ -400,7 +400,7 @@ namespace Vent.Test
         [ExpectedException(typeof(InvalidOperationException))]
         public void UndoAllAndDeregisterTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent = store.Commit(new PropertyEntity<string>("foo"));
 
             var values = new[] { "bar", "qez", "xim" };
@@ -425,7 +425,7 @@ namespace Vent.Test
         [TestMethod]
         public void UndoSomeAndDeregisterTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent = store.Commit(new PropertyEntity<string>("foo"));
 
             var values = new[] { "bar", "qez", "xim" };
@@ -497,7 +497,7 @@ namespace Vent.Test
         [TestMethod]
         public void RevertTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent = store.Commit(new PropertyEntity<string>("foo"));
             var currentMutation = store.CurrentMutation;
 
@@ -514,7 +514,7 @@ namespace Vent.Test
         [TestMethod]
         public void MutlipleEntityTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             var ent2 = store.Commit(new PropertyEntity<string>("bar"));
             var ent3 = store.Commit(new PropertyEntity<string>("qez"));
@@ -541,7 +541,7 @@ namespace Vent.Test
         [TestMethod]
         public void MutlipleEntityWithOverwriteTest()
         {
-            var store = new EntityStore()
+            var store = new EntityHistory(new EntityRegistry())
             {
                 MaxMutations = -1
             };
@@ -680,7 +680,7 @@ namespace Vent.Test
         [TestMethod]
         public void RemoveOldestCommitMutationTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent1 = new PropertyEntity<string>("foo");
             var ent2 = new PropertyEntity<string>("bar");
             store.Commit(ent1);
@@ -715,7 +715,7 @@ namespace Vent.Test
         [TestMethod]
         public void RemoveOldestDeregisterMutationTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent1 = new PropertyEntity<string>("foo");
             var ent2 = new PropertyEntity<string>("bar");
             store.Commit(ent1);
@@ -763,7 +763,7 @@ namespace Vent.Test
         [TestMethod]
         public void RemoveLastCommitTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             var ent2 = store.Commit(new PropertyEntity<string>("bar"));
             var ent3 = store.Commit(new PropertyEntity<string>("qaz"));
@@ -797,7 +797,7 @@ namespace Vent.Test
         [TestMethod]
         public void RemoveMidCommitTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             var ent2 = store.Commit(new PropertyEntity<string>("bar"));
             var ent3 = store.Commit(new PropertyEntity<string>("qaz"));
@@ -830,7 +830,7 @@ namespace Vent.Test
         [TestMethod]
         public void RemoveFirstCommitSingleEntityTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             store.Commit(ent1.With("bar"));
             store.Commit(ent1.With("qaz"));
@@ -874,7 +874,7 @@ namespace Vent.Test
         [TestMethod]
         public void RemoveMiddleCommitSingleEntityTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent = store.Commit(new PropertyEntity<string>("foo"));
             store.Commit(ent.With("bar"));
             store.Commit(ent.With("qaz"));
@@ -918,7 +918,7 @@ namespace Vent.Test
         [TestMethod]
         public void RemoveLastCommitSingleEntityTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent = store.Commit(new PropertyEntity<string>("foo"));
             store.Commit(ent.With("bar"));
             store.Commit(ent.With("qaz"));
@@ -963,7 +963,7 @@ namespace Vent.Test
         [TestMethod]
         public void RemoveDeregisterFirstTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             store.Deregister(ent1);
             var ent2 = store.Commit(new PropertyEntity<string>("bar"));
@@ -1000,7 +1000,7 @@ namespace Vent.Test
         [TestMethod]
         public void RemoveDeregisterInMiddlePositionTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             store.Commit(ent1.With("bar"));
             store.Deregister(ent1);
@@ -1035,7 +1035,7 @@ namespace Vent.Test
         [TestMethod]
         public void RemoveDeregisterInMiddlePositionAfterGoToTailTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             store.Commit(ent1.With("bar"));
             store.Deregister(ent1);
@@ -1084,7 +1084,7 @@ namespace Vent.Test
         [TestMethod]
         public void RemoveDeregisterInMiddlePositionAfterUndoBeforeDeregisterTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             store.Commit(ent1.With("bar"));
             store.Deregister(ent1);
@@ -1126,7 +1126,7 @@ namespace Vent.Test
         [TestMethod]
         public void DeleteDeregisterInLastPositionTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             store.Commit(ent1.With("bar"));
             var ent2 = store.Commit(new PropertyEntity<string>("qaz"));
@@ -1162,7 +1162,7 @@ namespace Vent.Test
         [TestMethod]
         public void DeleteBeginGroupInFirstPositionTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             store.BeginMutationGroup();
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             store.Commit(ent1.With("bar"));
@@ -1193,7 +1193,7 @@ namespace Vent.Test
         [TestMethod]
         public void DeleteBeginGroupInMiddlePositionTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             store.BeginMutationGroup();
             store.Commit(new PropertyEntity<string>("bar"));
@@ -1230,7 +1230,7 @@ namespace Vent.Test
         [TestMethod]
         public void DeleteEndGroupInMiddlePositionTest()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             store.BeginMutationGroup();
             store.Commit(ent1.With("qaz"));
@@ -1263,7 +1263,7 @@ namespace Vent.Test
         [ExpectedException(typeof(InvalidOperationException))]
         public void DeleteEndGroupShouldTrowException()
         {
-            var store = new EntityStore();
+            var store = new EntityHistory(new EntityRegistry());
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             store.BeginMutationGroup();
             store.Commit(ent1.With("qaz"));
