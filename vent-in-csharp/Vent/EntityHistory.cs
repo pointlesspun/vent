@@ -1,7 +1,6 @@
 ﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
 /// (c) Pointlesspun
 
-using System.Collections;
 using System.Data;
 
 namespace Vent
@@ -29,6 +28,7 @@ namespace Vent
 
         private int _currentMutation = 0;
 
+        //xxx move to registry
         public string Version { get; set; } = "0.2";
 
         /// <summary>
@@ -152,18 +152,19 @@ namespace Vent
                 // will be ignored - it basically counts as a NOP
                 if (Registry.Contains(entity))
                 {
-                    var lastVersion = Registry.Register((IEntity)entity.Clone());
+                    var lastVersion = Registry.Add((IEntity)entity.Clone());
                     versionInfo.CommitVersion(lastVersion);
 
                     AddMutation(new DeregisterEntity(entity, lastVersion));
 
                     // keep this slot reserved
-                    Registry.RemoveEntityFromSlot(entity);
+                    //Registry.RemoveEntityFromSlot(entity);
+                    Registry.ClearSlot(entity.Id);
                 }
             }
             else
             {
-                Registry.Deregister(entity);
+                Registry.Remove(entity.Id);
             }
         }
 
@@ -217,7 +218,7 @@ namespace Vent
                 }
 
                 // create a snapshot of the current entity
-                newVersion = Registry.Register((IEntity)entity.Clone());
+                newVersion = Registry.Add((IEntity)entity.Clone());
                 versionInfo.CommitVersion(newVersion);
             }
             else
@@ -225,7 +226,7 @@ namespace Vent
                 // entity is not yet added to the store?
                 if (!Registry.Contains(entity))
                 {
-                    Registry.Register(entity);
+                    Registry.Add(entity);
                 }
 
                 newVersion = AddVersioning(entity);
@@ -471,7 +472,7 @@ namespace Vent
             mutation.MutatedEntity.Id = -1;
 
             // keep the slot occupied
-            Registry.RemoveEntityFromSlot(mutation.MutatedEntityId);
+            Registry.ClearSlot(mutation.MutatedEntityId);
         }
 
         private IEntity ResolveMutatedEntity(MutateEntity mutation, VersionInfo versionInfo)
@@ -489,13 +490,14 @@ namespace Vent
             else
             {
                 // entity may have left the scope, create clone a new version
-                return Registry.AssignEntityToSlot((IEntity)versionInfo.Versions[0].Clone(), mutation.MutatedEntityId);
+                var clone= (IEntity)versionInfo.Versions[0].Clone();
+                return Registry.SetSlot(mutation.MutatedEntityId, clone);
             }
         }
 
         private void AddMutation(IMutation mutation)
         {
-            _mutations.Add(Registry.Register(mutation));
+            _mutations.Add(Registry.Add(mutation));
             _currentMutation++;
 
             // if max mutations <= 0 there is no limit to the number of mutations
@@ -513,8 +515,8 @@ namespace Vent
             var versionInfo = _entityVersionInfo[mutation.MutatedEntityId];
 
             // remove the mutation and entity version from the entity store
-            Registry.Deregister(mutation);
-            Registry.Deregister(mutation.AssociatedVersion.Id);
+            Registry.Remove(mutation.Id);
+            Registry.Remove(mutation.AssociatedVersion.Id);
 
             // remove the version from the entity's version records
             versionInfo.RemoveVersion(mutation.AssociatedVersion);
@@ -536,9 +538,9 @@ namespace Vent
                 }
 
                 _entityVersionInfo.Remove(versionInfo.HeadId);
-                Registry.Deregister(versionInfo.Id);
+                Registry.Remove(versionInfo.Id);
 
-                Registry.Deregister(versionInfo.HeadId);
+                Registry.Remove(versionInfo.HeadId);
             }
             
             // check if the head entity needs to be added to the registry again
@@ -552,12 +554,11 @@ namespace Vent
                 {
                     headEntity = deregisterEntity.MutatedEntity;
                     versionInfo.Revert(headEntity);
-                    Registry.Register(headEntity);
+                    Registry.Add(headEntity);
                 }
             }
         }       
         
-
         private void TryRemoveFutureMutations()
         {
             // are we at the head? if so ignore
@@ -579,7 +580,7 @@ namespace Vent
                         // simply remove them, the rest of the group will be removed eventually
                         // in this loop
                         _mutations.RemoveAt(i);
-                        Registry.Deregister(mutation.Id);
+                        Registry.Remove(mutation.Id);
                     }
                     else if (mutation is MutateEntity)
                     {
@@ -596,7 +597,7 @@ namespace Vent
         /// <returns></returns>
         private IEntity AddVersioning(IEntity entity)
         {
-            var versionInfo = Registry.Register(new VersionInfo()
+            var versionInfo = Registry.Add(new VersionInfo()
             {
                 HeadId = entity.Id,
                 Id = Registry.NextEntityId,
@@ -604,7 +605,7 @@ namespace Vent
             });
 
             // remove all mutations in front of this one - if any
-            var version0 = Registry.Register((IEntity)entity.Clone());
+            var version0 = Registry.Add((IEntity)entity.Clone());
             versionInfo.CommitVersion(version0);
 
             _entityVersionInfo[entity.Id] = versionInfo;
@@ -621,7 +622,7 @@ namespace Vent
             // (ie into the entity registry)
             if (mutation is DeregisterEntity)
             {
-                Registry.AssignEntityToSlot(entity, mutation.MutatedEntityId);
+                Registry.SetSlot(mutation.MutatedEntityId, entity);
             }
 
             versionInfo.Undo(entity);
@@ -644,7 +645,8 @@ namespace Vent
                 {
                     if (existingEntity != null)
                     {
-                        Registry.RemoveEntityFromSlot(entity);
+                        //Registry.RemoveEntityFromSlot(entity);
+                        Registry.ClearSlot(entity.Id);
                     }
                 }
 
@@ -652,7 +654,7 @@ namespace Vent
             }
             else if (mutation is CommitEntity && !Registry.Contains(entity))
             {
-                Registry.AssignEntityToSlot(entity, entity.Id);
+                Registry.SetSlot(entity.Id, entity);
             }
         }
         
@@ -722,12 +724,12 @@ namespace Vent
                     case BeginMutationGroup _:
                         groupCount++;
                         _mutations.RemoveAt(mutationIndex);
-                        Registry.Deregister(mutation.Id);
+                        Registry.Remove(mutation.Id);
                         break;
                     case EndMutationGroup _:
                         groupCount--;
                         _mutations.RemoveAt(mutationIndex);
-                        Registry.Deregister(mutation.Id);
+                        Registry.Remove(mutation.Id);
                         break;
                     case MutateEntity _:
                         DeleteMutateEntityMutation(mutationIndex);

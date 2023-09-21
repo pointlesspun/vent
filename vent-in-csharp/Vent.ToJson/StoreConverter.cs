@@ -115,7 +115,7 @@ namespace Vent.ToJson
                     
                     if (className != null  && _classLookup.TryGetValue(className, out var type))
                     {
-                        store.Registry.AssignEntityToSlot((IEntity) Activator.CreateInstance(type), key);
+                        store.Registry.SetSlot(key, (IEntity) Activator.CreateInstance(type));
                     }
                     else 
                     {
@@ -124,7 +124,7 @@ namespace Vent.ToJson
                 }
                 else
                 {
-                    store.Registry.AssignEntityToSlot((IEntity)null, key);
+                    store.Registry.ClearSlot(key);
                 }
             }
         }

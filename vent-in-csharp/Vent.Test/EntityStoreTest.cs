@@ -12,7 +12,7 @@ namespace Vent.Test
             var registry = new EntityRegistry();
             var store = new EntityHistory(registry);
 
-            var ent = registry.Register(new PropertyEntity<string>("foo"));
+            var ent = registry.Add(new PropertyEntity<string>("foo"));
 
             Assert.IsTrue(registry.EntitiesInScope == 1);
             Assert.IsTrue(registry[ent.Id] == ent);

@@ -20,7 +20,7 @@ namespace Vent.Test
         public void RegisterTest()
         {
             var registry = new EntityRegistry();
-            var ent = registry.Register(new StringEntity("foo"));
+            var ent = registry.Add(new StringEntity("foo"));
             
             Assert.IsNotNull(ent);
             Assert.IsTrue(registry.SlotCount == 1);
@@ -35,9 +35,9 @@ namespace Vent.Test
         public void DeregisterTest()
         {
             var registry = new EntityRegistry();
-            var ent = registry.Register(new StringEntity("foo"));
+            var ent = registry.Add(new StringEntity("foo"));
 
-            registry.Deregister(ent);
+            registry.Remove(ent.Id);
 
             Assert.IsTrue(registry.SlotCount == 0);
             Assert.IsTrue(registry.EntitiesInScope == 0);
@@ -59,7 +59,7 @@ namespace Vent.Test
 
             for (var i = 0; i < 4; i++)
             {
-                registry.Register(new StringEntity("foo" + i));
+                registry.Add(new StringEntity("foo" + i));
             }
 
             Assert.Fail();
@@ -70,7 +70,7 @@ namespace Vent.Test
         public void SelfRegisterTest()
         {
             var registry = new EntityRegistry();
-            registry.Register(registry);
+            registry.Add(registry);
 
             Assert.Fail();
         }
@@ -80,9 +80,9 @@ namespace Vent.Test
         public void SelfSameEntityTest()
         {
             var registry = new EntityRegistry();
-            var ent = registry.Register(new StringEntity("foo"));
+            var ent = registry.Add(new StringEntity("foo"));
 
-            registry.Register(ent);
+            registry.Add(ent);
 
             Assert.Fail();
         }
@@ -94,12 +94,12 @@ namespace Vent.Test
             {
                 MaxEntitySlots = 2
             };
-            var ent1 = registry.Register(new StringEntity("foo"));
-            var ent2 = registry.Register(new StringEntity("bar"));
+            var ent1 = registry.Add(new StringEntity("foo"));
+            var ent2 = registry.Add(new StringEntity("bar"));
 
-            registry.Deregister(ent1);
+            registry.Remove(ent1.Id);
 
-            var ent3 = registry.Register(new StringEntity("qaz"));
+            var ent3 = registry.Add(new StringEntity("qaz"));
 
             Assert.IsTrue(registry.SlotCount == 2);
             Assert.IsTrue(registry.EntitiesInScope == 2);
@@ -118,15 +118,15 @@ namespace Vent.Test
             {
                 MaxEntitySlots = 3
             };
-            var ent1 = registry.Register(new StringEntity("foo"));
-            var ent2 = registry.Register(new StringEntity("bar"));
-            var ent3 = registry.Register(new StringEntity("qad"));
+            var ent1 = registry.Add(new StringEntity("foo"));
+            var ent2 = registry.Add(new StringEntity("bar"));
+            var ent3 = registry.Add(new StringEntity("qad"));
 
-            registry.Deregister(ent1);
+            registry.Remove(ent1.Id);
 
             registry.NextEntityId = 1;
 
-            var ent4 = registry.Register(new StringEntity("thud"));
+            var ent4 = registry.Add(new StringEntity("thud"));
 
             Assert.IsTrue(registry.SlotCount == 3);
             Assert.IsTrue(registry.EntitiesInScope == 3);
@@ -143,8 +143,8 @@ namespace Vent.Test
         public void AssignToSlotTest()
         {
             var registry = new EntityRegistry();
-            var ent1 = registry.Register(new StringEntity("foo"));
-            var ent2 = registry.AssignEntityToSlot(new StringEntity("bar"), ent1.Id);
+            var ent1 = registry.Add(new StringEntity("foo"));
+            var ent2 = registry.SetSlot(ent1.Id, new StringEntity("bar"));
 
             Assert.IsFalse(registry.Contains(ent1));
             Assert.IsTrue(registry.Contains(ent2));
@@ -155,13 +155,13 @@ namespace Vent.Test
         public void RemoveFromSlotTest()
         {
             var registry = new EntityRegistry();
-            var ent1 = registry.Register(new StringEntity("foo"));
+            var ent1 = registry.Add(new StringEntity("foo"));
 
             Assert.IsTrue(registry.Contains(ent1));
             Assert.IsTrue(registry.EntitiesInScope == 1);
             Assert.IsTrue(registry.SlotCount == 1);
 
-            registry.RemoveEntityFromSlot(ent1);
+            registry.ClearSlot(ent1.Id);
 
             Assert.IsFalse(registry.Contains(ent1));
             Assert.IsTrue(ent1.Id == -1);
@@ -177,9 +177,9 @@ namespace Vent.Test
                 MaxEntitySlots = 5,
             };
             
-            registry.Register(new StringEntity("foo"));
-            registry.Register(new StringEntity("bar"));
-            registry.Register(new StringEntity("qad"));
+            registry.Add(new StringEntity("foo"));
+            registry.Add(new StringEntity("bar"));
+            registry.Add(new StringEntity("qad"));
 
             var clone = registry.Clone() as EntityRegistry;
 

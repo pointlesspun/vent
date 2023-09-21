@@ -17,7 +17,7 @@ namespace Vent.Test
 
             while (registry.SlotCount < store.MaxEntitySlots)
             {
-                registry.Register(new PropertyEntity<string>("foo"));
+                registry.Add(new PropertyEntity<string>("foo"));
             }
 
             Assert.IsTrue(registry.SlotCount == 3);
@@ -29,7 +29,7 @@ namespace Vent.Test
             Assert.IsTrue(registry.EntitiesInScope == 2);
 
             // this should go into id = 1
-            var ent = registry.Register(new PropertyEntity<string>("bar"));
+            var ent = registry.Add(new PropertyEntity<string>("bar"));
 
             Assert.IsTrue(ent.Id == 1);
 
@@ -63,7 +63,7 @@ namespace Vent.Test
             Assert.IsTrue(registry.EntitiesInScope == 5);
 
             // everything is in use, this should throw an exception
-            registry.Register(new PropertyEntity<string>("bar"));
+            registry.Add(new PropertyEntity<string>("bar"));
         }
     }
 }

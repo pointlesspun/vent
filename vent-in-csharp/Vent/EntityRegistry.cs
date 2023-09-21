@@ -8,6 +8,8 @@ namespace Vent
 
         private Dictionary<int, IEntity> _entities = new();
 
+        public static readonly int Unregistered = -1;
+
         public virtual Dictionary<int, IEntity> EntitySlots
         {
             get => _entities;
@@ -60,12 +62,12 @@ namespace Vent
         }
 
         /// <summary>
-        /// Register an entity without adding versioning
+        /// Adds an entity and assigns it to a slot, changing its id.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="entity"></param>
-        /// <returns>the registered entity</returns>
-        public T Register<T>(T entity) where T : class, IEntity
+        /// <returns>the added entity</returns>
+        public T Add<T>(T entity) where T : class, IEntity
         {
             // test preconditions
             Contract.Requires<ArgumentException>(entity != null, "Cannot register a null entity.");
@@ -106,23 +108,11 @@ namespace Vent
         }
 
         /// <summary>
-        /// Deregisters the given entity and sets the id to -1. 
-        /// If the entity has version information
-        /// associated with it, this will add a deregister mutation to the store.
-        /// If the store is behind the head of the mutation list, all future mutations
-        /// from the current mutation point will be removed.
+        /// Removes the entity (if any) from the slot with the given id. If an entity is occupying
+        /// this slot, it will have its id set to Unregistered.
         /// </summary>
         /// <param name="entity"></param>
-        public void Deregister(IEntity entity)
-        {
-            Contract.Requires<ArgumentException>(entity != null);
-            Contract.Requires<InvalidOperationException>(Contains(entity));
-
-            _entities.Remove(entity.Id);
-            entity.Id = -1;
-        }
-
-        public void Deregister(int id)
+        public void Remove(int id)
         {
             if (_entities.TryGetValue(id, out var entity))
             {
@@ -131,7 +121,7 @@ namespace Vent
                 // slot may just have been occupied
                 if (entity != null)
                 {
-                    entity.Id = -1;
+                    entity.Id = Unregistered;
                 }
             }
             else
@@ -143,11 +133,11 @@ namespace Vent
 
         /// <summary>
         /// Assign the given entity to the given slot. If an existing entity 
-        /// was occupying the slot, it will be removed and its id set to -1.
+        /// was occupying the slot, it will be removed and its id set to Unregistered.
         /// If the slot is not occupied, the entity will be simply assigned.
         /// </summary>
         /// <param name="entity"></param>
-        public T AssignEntityToSlot<T>(T entity, int slotId) where T : class, IEntity
+        public T SetSlot<T>(int slotId, T entity) where T : class, IEntity
         {
             Contract.Requires<ArgumentException>(entity != null);
             Contract.Requires<ArgumentException>(entity != this, "Cannot register self.");
@@ -157,7 +147,7 @@ namespace Vent
             {
                 if (existingEntity != null)
                 {
-                    existingEntity.Id = -1;
+                    existingEntity.Id = Unregistered;
                 }
             }
 
@@ -168,22 +158,12 @@ namespace Vent
         }
 
         /// <summary>
-        /// Remove the given entity from its slot and set the slot to null.
-        /// This reduces the EntitiesInScope by one. The SlotCount (number
-        /// of slots in use) on the other hand will be unaffected.
-        /// other
+        /// Clears the occupied slot by setting its value to 0. This does not
+        /// change the SlotCount. If any entity was occupying this slot, its id will
+        /// now be set to Unregistered.
         /// </summary>
-        /// <param name="entity"></param>
-        public void RemoveEntityFromSlot(IEntity entity)
-        {
-            Contract.Requires<ArgumentException>(entity != null);
-            Contract.Requires<InvalidOperationException>(Contains(entity));
-
-            _entities[entity.Id] = null;
-            entity.Id = -1;
-        }
-
-        public void RemoveEntityFromSlot(int id)
+        /// <param name="id"></param>
+        public void ClearSlot(int id)
         {
             Contract.Requires<ArgumentException>(id >= 0, $"Cannot remove entity from slot using id {id}.");
             
@@ -191,7 +171,7 @@ namespace Vent
             {
                 Contract.Requires<InvalidOperationException>(entity != null, $"Trying to remove entity from slot at {id}, but there was no entity.");
                 _entities[id] = null;
-                entity.Id = -1;
+                entity.Id = Unregistered;
             }
             else
             {

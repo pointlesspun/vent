@@ -163,7 +163,7 @@ namespace Vent.Test
         public void RegisterRevertTest()
         {
             var store = new EntityHistory(new EntityRegistry());
-            var ent = store.Registry.Register(new PropertyEntity<string>("foo"));
+            var ent = store.Registry.Add(new PropertyEntity<string>("foo"));
 
             store.Revert(ent);
         }
@@ -173,7 +173,7 @@ namespace Vent.Test
         public void RegisterCommitThenRevertTest()
         {
             var store = new EntityHistory(new EntityRegistry());
-            var ent = store.Registry.Register(new PropertyEntity<string>("foo"));
+            var ent = store.Registry.Add(new PropertyEntity<string>("foo"));
 
             // this will add versioning to ent, allowing us to revert down the line
             store.Commit(ent);
@@ -190,7 +190,7 @@ namespace Vent.Test
         public void DeregisterWithRegisteredEntityTest()
         {
             var store = new EntityHistory(new EntityRegistry());
-            var ent = store.Registry.Register(new PropertyEntity<string>("foo"));
+            var ent = store.Registry.Add(new PropertyEntity<string>("foo"));
 
             Assert.IsTrue(store.Registry.Contains(ent));
             Assert.IsTrue(store.GetVersionInfo(ent) == null);
