@@ -139,7 +139,7 @@ namespace Vent
         /// <param name="entity"></param>
         public T SetSlot<T>(int slotId, T entity) where T : class, IEntity
         {
-            Contract.Requires<ArgumentException>(entity != null);
+            Contract.Requires<ArgumentException>(entity != null, "Entity cannot be null.");
             Contract.Requires<ArgumentException>(entity != this, "Cannot register self.");
             Contract.Requires<InvalidOperationException>(!Contains(entity));
             
@@ -155,6 +155,19 @@ namespace Vent
             entity.Id = slotId;
 
             return entity;
+        }
+
+        public void SetSlotToNull(int slotId)
+        {
+            if (_entities.TryGetValue(slotId, out var existingEntity))
+            {
+                if (existingEntity != null)
+                {
+                    existingEntity.Id = Unregistered;
+                }
+            }
+
+            _entities[slotId] = null;
         }
 
         /// <summary>
