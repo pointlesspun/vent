@@ -1,14 +1,7 @@
-﻿
-using Microsoft.Win32;
-using Newtonsoft.Json.Linq;
-using System.Collections;
-using System.Collections.Generic;
-using System.Net.Http.Headers;
+﻿using System.Collections;
 using System.Reflection;
-using System.Reflection.PortableExecutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using static System.Formats.Asn1.AsnWriter;
 
 namespace Vent.ToJson
 {
@@ -19,11 +12,11 @@ namespace Vent.ToJson
 
         private readonly Dictionary<string, Type> _classLookup = new();
 
+        
         private class ForwardReference
         {
-            public int entityKey;
-            public PropertyInfo propertyInfo;
-            public object key;
+            public int EntityId { get; set; }
+            public object Key { get; set; }
 
             public ForwardReference()
             {
@@ -31,12 +24,19 @@ namespace Vent.ToJson
 
             public ForwardReference(int entityKey)
             {
-                this.entityKey  = entityKey;
+                this.EntityId  = entityKey;
             }
 
-            public void Apply(EntityRegistry registry, object target)
+            public void ResolveEntity(EntityRegistry registry, object target)
             {
-                propertyInfo.SetValue(target, registry[entityKey]);
+                if (target is IList list)
+                {
+                    list[(int)Key] = registry[EntityId];
+                }
+                else if (Key is PropertyInfo propertyInfo)
+                {
+                    propertyInfo.SetValue(target, registry[EntityId]);
+                }
             }
         }
 
@@ -180,13 +180,14 @@ namespace Vent.ToJson
             }
         }
 
-        private void ResolveForwardReferences(EntityRegistry registry, Dictionary<object, List<ForwardReference>> forwardReferences)
+        private static void ResolveForwardReferences(EntityRegistry registry, 
+            Dictionary<object, List<ForwardReference>> forwardReferences)
         {
             foreach (var forwardReferenceList in forwardReferences)
             {
                 foreach (var forwardReference in forwardReferenceList.Value)
                 {
-                    forwardReference.Apply(registry, forwardReferenceList.Key);
+                    forwardReference.ResolveEntity(registry, forwardReferenceList.Key);
                 }
             }
         }
@@ -277,7 +278,7 @@ namespace Vent.ToJson
 
                         if (value is ForwardReference reference)
                         {
-                            reference.propertyInfo = info;
+                            reference.Key = info;
 
                             if (objectReferences == null)
                             {
@@ -342,30 +343,38 @@ namespace Vent.ToJson
             var elementType = type.GetGenericArguments()[0];
             var listType = typeof(List<>).MakeGenericType(elementType);
             var listValue = (IList)Activator.CreateInstance(listType);
+            
             List<ForwardReference> listEntityReferences = null;
 
             if (typeof(IEntity).IsAssignableFrom(elementType))
             {
                 void ParseEntityListElement(ref Utf8JsonReader reader)
                 {
-                    var key = reader.GetInt32();
-                    if (registry.ContainsKey(key))
-                    {
-                        listValue.Add(registry[key]);
-                    }
-                    else
-                    {
-                        if (listEntityReferences == null)
-                        {
-                            listEntityReferences = new List<ForwardReference>();
-                            references[listValue] = listEntityReferences;
-                        }
+                    ReadAny(ref reader);
 
-                        listEntityReferences.Add(new ForwardReference()
+                    if (reader.TokenType != JsonTokenType.EndArray)
+                    {
+                        var key = reader.GetInt32();
+                        if (registry.ContainsKey(key))
                         {
-                            entityKey = key,
-                            key = listValue.Count
-                        });
+                            listValue.Add(registry[key]);
+                        }
+                        else
+                        {
+                            if (listEntityReferences == null)
+                            {
+                                listEntityReferences = new List<ForwardReference>();
+                                references[listValue] = listEntityReferences;
+                            }
+
+                            listEntityReferences.Add(new ForwardReference()
+                            {
+                                EntityId = key,
+                                Key = listValue.Count
+                            });
+
+                            listValue.Add(null);
+                        }
                     }
                 }
 
@@ -388,7 +397,5 @@ namespace Vent.ToJson
 
             return listValue;
         }
-
-        
     }
 }

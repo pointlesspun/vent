@@ -145,6 +145,51 @@ namespace Vent.ToJson.Test
             }
         }
 
+        [TestMethod]
+        public void EntityListEntityTest()
+        {
+            var foo = new StringEntity("foo");
+            var bar = new StringEntity("bar");
+
+            var registry = new EntityRegistry()
+            {
+                foo,
+                new EntityListEntity()
+                {
+                    EntityList = new List<IEntity> { foo, bar }
+                },
+                bar
+            };
+
+            var serializeOptions = CreateTestOptions();
+
+            var json = JsonSerializer.Serialize(registry, serializeOptions);
+
+            var clone = JsonSerializer.Deserialize<EntityRegistry>(json, serializeOptions);
+
+            Assert.IsTrue(clone != null);
+            Assert.IsTrue(clone.MaxEntitySlots == registry.MaxEntitySlots);
+            Assert.IsTrue(clone.NextEntityId == registry.NextEntityId);
+            Assert.IsTrue(clone.EntitiesInScope == registry.EntitiesInScope);
+
+            foreach (var kvp in registry)
+            {
+                Assert.IsTrue(clone[kvp.Key].Equals(registry[kvp.Key]));
+                Assert.IsFalse(clone[kvp.Key] == registry[kvp.Key]);
+            }
+        }
+
+        // xxx to test
+        // - EntityStore in EntityStore (special case)
+        // - Entity with Dictionary
+        // - Entity with EntityDictionary
+        // - Entity with complex object as property
+        // - Entity with complex object referencing an entity
+        // - Entity with complex object using a list 
+        // - Entity with complex object using an entity list 
+        // - Entity History property
+        // - Attribute indicating an entity property is not in the store and owned by the encapsulating
+        //   class
         private JsonSerializerOptions CreateTestOptions()
         {
             var converter = new EntityRegistryConverter(typeof(MultiPropertyTestEntity).Assembly, typeof(StringEntity).Assembly);
