@@ -133,36 +133,39 @@ namespace Vent.ToJson
             if (value == null)
             {
                 writer.WriteNullValue();
-            }
 
-            var type = value.GetType();
-
-            if (EntityReflection.IsPrimitiveOrString(type))
-            {
-                WritePrimitive(writer, value);
-            }
-            else if (EntityReflection.IsEntity(type))
-            {
-                writer.WriteNumberValue(((IEntity)value).Id);
-            }
-            else if (type.IsArray)
-            {
-                WriteVentArray(writer, (Array)value);
-            }
-            else if (typeof(IEnumerable).IsAssignableFrom(type))
-            {
-                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
-                {
-                    WriteVentList(writer, (IList)value);
-                }
-                else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>))
-                {
-                    WriteVentDictionary(writer, (IDictionary)value);
-                }
             }
             else
             {
-                WriteVentObject(writer, value);
+                var type = value.GetType();
+
+                if (EntityReflection.IsPrimitiveOrString(type))
+                {
+                    WritePrimitive(writer, value);
+                }
+                else if (EntityReflection.IsEntity(type))
+                {
+                    writer.WriteNumberValue(((IEntity)value).Id);
+                }
+                else if (type.IsArray)
+                {
+                    WriteVentArray(writer, (Array)value);
+                }
+                else if (typeof(IEnumerable).IsAssignableFrom(type))
+                {
+                    if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
+                    {
+                        WriteVentList(writer, (IList)value);
+                    }
+                    else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>))
+                    {
+                        WriteVentDictionary(writer, (IDictionary)value);
+                    }
+                }
+                else
+                {
+                    WriteVentObject(writer, value);
+                }
             }
         }
 
@@ -256,7 +259,7 @@ namespace Vent.ToJson
                     writer.WriteStringValue((string)value);
                     break;
                 case TypeCode.Char:
-                    writer.WriteStringValue((string)value);
+                    writer.WriteStringValue(value.ToString());
                     break;
                 case TypeCode.Boolean:
                     writer.WriteBooleanValue((bool)value);

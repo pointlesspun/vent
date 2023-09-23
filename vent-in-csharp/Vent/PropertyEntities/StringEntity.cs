@@ -11,6 +11,20 @@ namespace Vent.PropertyEntities
         public StringEntity() { }
 
         public StringEntity(string value) : base(value) { }
+
+        public override bool Equals(object obj)
+        {
+            return obj is StringEntity entity &&
+                   Id == entity.Id &&
+                   Value == entity.Value;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Id, Value);
+        }
+
+
     }
 
 }

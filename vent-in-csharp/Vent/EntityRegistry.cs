@@ -193,33 +193,29 @@ namespace Vent
             }
         }
 
-        public IEnumerable<T> GetEntitiesOf<T>() where T : class, IEntity
-        {
-            return _entities.Values.Where(e => e is T).Cast<T>();
-        }
-
-        public IEnumerator<KeyValuePair<int, IEntity>> GetEnumerator()
-        {
-            return _entities.GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return _entities.Values.GetEnumerator();
-        }
-
+        public IEnumerable<T> GetEntitiesOf<T>() where T : class, IEntity => 
+            _entities.Values.Where(e => e is T).Cast<T>();
+        
+        public IEnumerator<KeyValuePair<int, IEntity>> GetEnumerator() => 
+            _entities.GetEnumerator();
+        
+        IEnumerator IEnumerable.GetEnumerator() => 
+            _entities.Values.GetEnumerator();
+        
         /// <summary>
         /// Checks if this entity object is in this store
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        public bool Contains(IEntity entity)
-        {
-            return entity != null
+        public bool Contains(IEntity entity) =>
+                entity != null
                 && entity.Id >= 0
                 && _entities.TryGetValue(entity.Id, out IEntity other)
                 && other == entity;
-        }
+        
+        public bool ContainsKey(int key) => 
+            _entities.ContainsKey(key);
+        
 
         public override object Clone()
         {

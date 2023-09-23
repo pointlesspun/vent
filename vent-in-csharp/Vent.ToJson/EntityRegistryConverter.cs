@@ -1,6 +1,7 @@
 ﻿
 using Microsoft.Win32;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Reflection.PortableExecutable;
@@ -16,6 +17,18 @@ namespace Vent.ToJson
         private const string EntityTypeTag = "__entityType";
 
         private readonly Dictionary<string, Type> _classLookup = new();
+
+        private class ForwardReference
+        {
+            public int entityKey;
+            public PropertyInfo propertyInfo;
+            public object target;
+
+            public void Apply(EntityRegistry registry)
+            {
+                propertyInfo.SetValue(target, registry[entityKey]);
+            }
+        }
 
         public EntityRegistryConverter()
         {
@@ -110,7 +123,7 @@ namespace Vent.ToJson
             }
         }
 
-        private void ReadEntityInstances(ref Utf8JsonReader reader, EntityRegistry store)
+        private void ReadEntityInstances(ref Utf8JsonReader reader, EntityRegistry registry)
         {
             if (reader.Read() 
                 && reader.TokenType == JsonTokenType.PropertyName 
@@ -118,7 +131,9 @@ namespace Vent.ToJson
             {
                 if (reader.Read() && reader.TokenType == JsonTokenType.StartObject)
                 {
-                    while (ReadInstance(ref reader, store));
+                    var forwardReferences = new List<ForwardReference>();
+
+                    while (ReadInstance(ref reader, registry, forwardReferences)) ;
 
                     if (!reader.Read())
                     {
@@ -128,6 +143,11 @@ namespace Vent.ToJson
                     if (reader.TokenType != JsonTokenType.EndObject)
                     {
                         throw new JsonException($"expected JsonTokenType.EndObject but found {reader.TokenType}.");
+                    }
+
+                    foreach (var forwardReference in forwardReferences)
+                    {
+                        forwardReference.Apply(registry);
                     }
                 }
             }
@@ -144,7 +164,7 @@ namespace Vent.ToJson
             }
         }
 
-        public bool ReadInstance(ref Utf8JsonReader reader, EntityRegistry registry)
+        private bool ReadInstance(ref Utf8JsonReader reader, EntityRegistry registry, List<ForwardReference> references)
         {
             if (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
             {
@@ -158,9 +178,9 @@ namespace Vent.ToJson
                             registry.SetSlotToNull(key);
                             break;
                         case JsonTokenType.StartObject:
-                            var entity = CreateEntityInstance(ref reader, registry);
+                            var entity = CreateEntityInstance(ref reader);
                             registry.SetSlot(key, entity);
-                            ReadEntityProperties(ref reader, registry, entity);
+                            ReadEntityProperties(ref reader, registry, entity, references);
                             break;
                         default:
                             throw new NotImplementedException($"Unexpected token {reader.TokenType} encountered after key {key} while reading an entity instance");
@@ -180,7 +200,7 @@ namespace Vent.ToJson
             return false;
         }
 
-        private IEntity CreateEntityInstance(ref Utf8JsonReader reader, EntityRegistry registry)
+        private IEntity CreateEntityInstance(ref Utf8JsonReader reader)
         {
             // read and create entity type this must be the first property
             if (reader.Read() && reader.TokenType == JsonTokenType.PropertyName
@@ -210,7 +230,11 @@ namespace Vent.ToJson
             }
         }
 
-        private void ReadEntityProperties(ref Utf8JsonReader reader, EntityRegistry registry, IEntity entity)
+        private void ReadEntityProperties(
+                ref Utf8JsonReader reader, 
+                EntityRegistry registry, 
+                IEntity entity, 
+                List<ForwardReference> references)
         {
             var entityType = entity.GetType();
             while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName) 
@@ -221,8 +245,20 @@ namespace Vent.ToJson
 
                 if (info != null)
                 {
-                    var value = ParseValue(ref reader, registry, info.PropertyType);
-                    info.SetValue(entity, value);
+                    var type = info.PropertyType;
+
+                    var value = ParseValue(ref reader, registry, type);
+
+                    if (value is ForwardReference reference)
+                    {
+                        reference.propertyInfo = info;
+                        reference.target = entity;
+                        references.Add(reference);
+                    }
+                    else
+                    {
+                        info.SetValue(entity, value);
+                    }
                 }
                 else
                 {
@@ -231,6 +267,7 @@ namespace Vent.ToJson
 
             }
         }
+
 
         private object ParseValue(ref Utf8JsonReader reader, EntityRegistry registry, Type expectedType)
         {
@@ -247,7 +284,17 @@ namespace Vent.ToJson
                 }
                 else if (EntityReflection.IsEntity(expectedType))
                 {
-                    return registry[reader.GetInt32()];
+                    var key = reader.GetInt32();
+                    if (registry.ContainsKey(key))
+                    {
+                        return registry[key];
+                    }
+
+                    return new ForwardReference()
+                    {
+                        entityKey = key,
+                    };
+                    
                 }
                 else
                 {
@@ -257,7 +304,5 @@ namespace Vent.ToJson
 
             throw new JsonException($"expected Value but found no more tokens");
         }
-
-
     }
 }
