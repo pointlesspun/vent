@@ -308,9 +308,16 @@ namespace Vent.ToJson
             {
                 if (reader.TokenType == JsonTokenType.PropertyName)
                 {
-                    if (reader.Read())
+                    if (reader.ValueTextEquals(expectedPropertyName))
                     {
-                        return (T) ReadPrimitive(reader, typeof(T));
+                        if (reader.Read())
+                        {
+                            return (T)ReadPrimitive(reader, typeof(T));
+                        }
+                    }
+                    else
+                    {
+                        throw new System.Text.Json.JsonException($"expected  name {expectedPropertyName} but found {reader.GetString()}");
                     }
 
                     throw new System.Text.Json.JsonException($"expected {typeof(T)} but found no more tokens");
@@ -320,6 +327,23 @@ namespace Vent.ToJson
             }
 
             throw new System.Text.Json.JsonException($"expected PropertyName but found no more tokens");
+        }
+
+        public delegate void JsonArrayReader(ref Utf8JsonReader reader);
+
+        public static void ParseJsonArray(ref Utf8JsonReader reader, JsonArrayReader arrayElementHandler)
+        {
+            if (reader.TokenType == JsonTokenType.StartArray)
+            {
+                while (reader.TokenType != JsonTokenType.EndArray)
+                {
+                    arrayElementHandler(ref reader);
+                }
+            }
+            else
+            {
+                throw new System.Text.Json.JsonException($"expected JsonTokenType.StartArray but found {reader.TokenType}.");
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿
 using Microsoft.Win32;
 using Newtonsoft.Json.Linq;
+using System.Collections;
 using System.Collections.Generic;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -22,9 +23,18 @@ namespace Vent.ToJson
         {
             public int entityKey;
             public PropertyInfo propertyInfo;
-            public object target;
+            public object key;
 
-            public void Apply(EntityRegistry registry)
+            public ForwardReference()
+            {
+            }
+
+            public ForwardReference(int entityKey)
+            {
+                this.entityKey  = entityKey;
+            }
+
+            public void Apply(EntityRegistry registry, object target)
             {
                 propertyInfo.SetValue(target, registry[entityKey]);
             }
@@ -123,186 +133,262 @@ namespace Vent.ToJson
             }
         }
 
-        private void ReadEntityInstances(ref Utf8JsonReader reader, EntityRegistry registry)
+        private static void ReadAny(ref Utf8JsonReader reader)
         {
-            if (reader.Read() 
-                && reader.TokenType == JsonTokenType.PropertyName 
-                && reader.ValueTextEquals(EntityInstancesTag))
-            {
-                if (reader.Read() && reader.TokenType == JsonTokenType.StartObject)
-                {
-                    var forwardReferences = new List<ForwardReference>();
-
-                    while (ReadInstance(ref reader, registry, forwardReferences)) ;
-
-                    if (!reader.Read())
-                    {
-                        throw new JsonException($"expected JsonTokenType.EndObject but found no more tokens.");
-                    }
-
-                    if (reader.TokenType != JsonTokenType.EndObject)
-                    {
-                        throw new JsonException($"expected JsonTokenType.EndObject but found {reader.TokenType}.");
-                    }
-
-                    foreach (var forwardReference in forwardReferences)
-                    {
-                        forwardReference.Apply(registry);
-                    }
-                }
-            }
-            else
+            if (!reader.Read())
             {
                 if (reader.IsFinalBlock)
                 {
-                    throw new JsonException($"expected Property with name {EntityInstancesTag} but found no more tokens.");
-                }
-                else
-                {
-                    throw new JsonException($"expected Property with name {EntityInstancesTag} but found {reader.TokenType}.");
+                    throw new JsonException($"expected more tokens, but encountered the final block.");
                 }
             }
         }
 
-        private bool ReadInstance(ref Utf8JsonReader reader, EntityRegistry registry, List<ForwardReference> references)
+        private static void ReadToken(ref Utf8JsonReader reader, JsonTokenType expectedToken)
         {
-            if (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
+            ReadAny(ref reader);
+            
+            if (reader.TokenType != expectedToken)
             {
-                var key = int.Parse(reader.GetString());
-
-                if (reader.Read())
-                {
-                    switch (reader.TokenType)
-                    {
-                        case JsonTokenType.Null:
-                            registry.SetSlotToNull(key);
-                            break;
-                        case JsonTokenType.StartObject:
-                            var entity = CreateEntityInstance(ref reader);
-                            registry.SetSlot(key, entity);
-                            ReadEntityProperties(ref reader, registry, entity, references);
-                            break;
-                        default:
-                            throw new NotImplementedException($"Unexpected token {reader.TokenType} encountered after key {key} while reading an entity instance");
-
-                    }
-
-                   
-                    if (reader.TokenType != JsonTokenType.EndObject)
-                    {
-                        throw new JsonException($"expected JsonTokenType.EndObject but found {reader.TokenType}");
-                    }
-
-                    return true;
-                }
+                throw new JsonException($"expected {expectedToken} but found {reader.TokenType}.");
             }
-
-            return false;
         }
 
-        private IEntity CreateEntityInstance(ref Utf8JsonReader reader)
+        private static string ReadString(ref Utf8JsonReader reader)
         {
-            // read and create entity type this must be the first property
-            if (reader.Read() && reader.TokenType == JsonTokenType.PropertyName
-                    && reader.ValueTextEquals(EntityTypeTag))
-            {
-                if (reader.Read())
-                {
-                    var className = reader.GetString();
+            ReadAny(ref reader);
 
-                    if (className != null && _classLookup.TryGetValue(className, out var type))
-                    {
-                        return (IEntity)Activator.CreateInstance(type);
-                    }
-                    else
-                    {
-                        throw new JsonException($"Cannot instantiate entity of class {className}, it was not found in the classRegistry");
-                    }
-                }
-                else
+            if (reader.TokenType != JsonTokenType.String)
+            {
+                throw new JsonException($"expected {JsonTokenType.String} but found {reader.TokenType}.");
+            }
+
+            return reader.GetString();
+        }
+
+        private static void ReadPropertyName(ref Utf8JsonReader reader, string propertyName)
+        {
+            ReadAny(ref reader);
+
+            if (reader.TokenType != JsonTokenType.PropertyName
+                || !reader.ValueTextEquals(propertyName))
+            {
+                if (reader.TokenType != JsonTokenType.EndObject)
                 {
-                    throw new JsonException($"expected EntityType but found no more tokens");
+                    throw new JsonException($"expected property name {propertyName} but found {reader.TokenType}.");
                 }
+            }
+        }
+
+        private void ResolveForwardReferences(EntityRegistry registry, Dictionary<object, List<ForwardReference>> forwardReferences)
+        {
+            foreach (var forwardReferenceList in forwardReferences)
+            {
+                foreach (var forwardReference in forwardReferenceList.Value)
+                {
+                    forwardReference.Apply(registry, forwardReferenceList.Key);
+                }
+            }
+        }
+
+        private void ReadEntityInstances(ref Utf8JsonReader reader, EntityRegistry registry)
+        {
+            ReadPropertyName(ref reader, EntityInstancesTag);
+            {
+                ReadToken(ref reader, JsonTokenType.StartObject);
+                {
+                    var forwardReferences = new Dictionary<object, List<ForwardReference>>();
+
+                    while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
+                    {
+                        var key = int.Parse(reader.GetString());
+                        var entity = CreateObject(ref reader, registry, forwardReferences) as IEntity;
+
+                        registry.SetSlot(key, entity);                      
+                    }
+
+                    ResolveForwardReferences(registry, forwardReferences);
+                }
+                ReadToken(ref reader, JsonTokenType.EndObject);
+            }
+        }
+
+        private object CreateInstanceFromTypeName(ref Utf8JsonReader reader)
+        {
+            var className = ReadString(ref reader);
+
+            if (className != null && _classLookup.TryGetValue(className, out var type))
+            {
+                return (IEntity)Activator.CreateInstance(type);
             }
             else
             {
-                throw new InvalidDataException($"First property of Json should be a valid property named {EntityTypeTag}.");
+                throw new JsonException($"Cannot instantiate entity of class {className}, it was not found in the classRegistry");
             }
         }
 
-        private void ReadEntityProperties(
-                ref Utf8JsonReader reader, 
-                EntityRegistry registry, 
-                IEntity entity, 
-                List<ForwardReference> references)
+        private object CreateObject(
+            ref Utf8JsonReader reader, 
+            EntityRegistry registry, 
+            Dictionary<object, List<ForwardReference>> forwardReferences)
         {
-            var entityType = entity.GetType();
-            while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName) 
-            { 
-                var propertyName = reader.GetString();  
+            ReadAny(ref reader);
 
-                var info = entityType.GetProperty(propertyName);
+            switch (reader.TokenType)
+            {
+                case JsonTokenType.Null:
+                    return null;
+                case JsonTokenType.StartObject:
+                    ReadPropertyName(ref reader, EntityTypeTag);
+                    {
+                        var obj = CreateInstanceFromTypeName(ref reader);
+                       
+                        ParseObjectProperties(ref reader, registry, forwardReferences, obj);
+
+                        return obj;
+                    }
+                   
+                default:
+                    throw new NotImplementedException($"Unexpected token {reader.TokenType} encountered");
+            }
+        }
+
+
+        private void ParseObjectProperties(
+                ref Utf8JsonReader reader,
+                EntityRegistry registry,
+                Dictionary<object, List<ForwardReference>> references,
+                object obj)
+        {
+            var type = obj.GetType();
+            List<ForwardReference> objectReferences = null;
+
+            while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
+            {
+                var propertyName = reader.GetString();
+
+                var info = type.GetProperty(propertyName);
 
                 if (info != null)
                 {
-                    var type = info.PropertyType;
-
-                    var value = ParseValue(ref reader, registry, type);
-
-                    if (value is ForwardReference reference)
+                    ReadAny(ref reader);
                     {
-                        reference.propertyInfo = info;
-                        reference.target = entity;
-                        references.Add(reference);
-                    }
-                    else
-                    {
-                        info.SetValue(entity, value);
+                        var value = ParseValue(ref reader, registry, references, info.PropertyType);
+
+                        if (value is ForwardReference reference)
+                        {
+                            reference.propertyInfo = info;
+
+                            if (objectReferences == null)
+                            {
+                                objectReferences = new List<ForwardReference>();
+                                references[obj] = objectReferences;
+                            }
+
+                            objectReferences.Add(reference);
+                        }
+                        else
+                        {
+                            info.SetValue(obj, value);
+                        }
                     }
                 }
                 else
                 {
-                    throw new NotImplementedException($"Entity of type {entityType} does not have a property called {propertyName}");
+                    throw new NotImplementedException($"Object of type {type} does not have a property called {propertyName}");
                 }
-
             }
         }
 
-
-        private object ParseValue(ref Utf8JsonReader reader, EntityRegistry registry, Type expectedType)
+        private object ParseValue(
+            ref Utf8JsonReader reader, 
+            EntityRegistry registry,
+            Dictionary<object, List<ForwardReference>> references,
+            Type valueType)
         {
-            if (reader.Read())
+            if (reader.TokenType == JsonTokenType.Null)
             {
-                if (reader.TokenType == JsonTokenType.Null)
-                {
-                    return null;
-                }
+                return null;
+            }
+            else if (EntityReflection.IsEntity(valueType))
+            {
+                var key = reader.GetInt32();
 
-                if (EntityReflection.IsPrimitiveOrString(expectedType))
+                return registry.ContainsKey(key)
+                    ? registry[key]
+                    : new ForwardReference(key);
+            }
+            else if (EntityReflection.IsPrimitiveOrString(valueType))
+            {
+                return JsonUtil.ReadPrimitive(reader, valueType);
+            }
+            else if (typeof(IEnumerable).IsAssignableFrom(valueType))
+            {
+                if (valueType.IsGenericType && valueType.GetGenericTypeDefinition() == typeof(List<>))
                 {
-                    return JsonUtil.ReadPrimitive(reader, expectedType);
+                    return ParseList(ref reader, registry, references, valueType);
                 }
-                else if (EntityReflection.IsEntity(expectedType))
+            }
+
+            throw new NotImplementedException($"Cannot parse {valueType} to a value");
+        }
+
+        
+        private IList ParseList(ref Utf8JsonReader reader,
+            EntityRegistry registry,
+            Dictionary<object, List<ForwardReference>> references,
+            Type type)
+        {
+            var elementType = type.GetGenericArguments()[0];
+            var listType = typeof(List<>).MakeGenericType(elementType);
+            var listValue = (IList)Activator.CreateInstance(listType);
+            List<ForwardReference> listEntityReferences = null;
+
+            if (typeof(IEntity).IsAssignableFrom(elementType))
+            {
+                void ParseEntityListElement(ref Utf8JsonReader reader)
                 {
                     var key = reader.GetInt32();
                     if (registry.ContainsKey(key))
                     {
-                        return registry[key];
+                        listValue.Add(registry[key]);
                     }
-
-                    return new ForwardReference()
+                    else
                     {
-                        entityKey = key,
-                    };
-                    
+                        if (listEntityReferences == null)
+                        {
+                            listEntityReferences = new List<ForwardReference>();
+                            references[listValue] = listEntityReferences;
+                        }
+
+                        listEntityReferences.Add(new ForwardReference()
+                        {
+                            entityKey = key,
+                            key = listValue.Count
+                        });
+                    }
                 }
-                else
+
+                JsonUtil.ParseJsonArray(ref reader, ParseEntityListElement);
+            }
+            else
+            {
+                void ParseListElement(ref Utf8JsonReader reader)
                 {
-                    throw new NotImplementedException($"Cannot parse {expectedType} to a value");
+                    ReadAny(ref reader);
+
+                    if (reader.TokenType != JsonTokenType.EndArray)
+                    {
+                        listValue.Add(ParseValue(ref reader, registry, references, elementType));
+                    }
                 }
+
+                JsonUtil.ParseJsonArray(ref reader, ParseListElement);
             }
 
-            throw new JsonException($"expected Value but found no more tokens");
+            return listValue;
         }
+
+        
     }
 }

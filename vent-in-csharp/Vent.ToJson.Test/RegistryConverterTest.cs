@@ -116,6 +116,34 @@ namespace Vent.ToJson.Test
             }
         }
 
+        [TestMethod]
+        public void IntListEntityTest()
+        {
+            var registry = new EntityRegistry()
+            {
+                new IntListEntity()
+                {
+                    IntList = new List<int> { 1, 2 },
+                }
+            };
+
+            var serializeOptions = CreateTestOptions();
+
+            var json = JsonSerializer.Serialize(registry, serializeOptions);
+
+            var clone = JsonSerializer.Deserialize<EntityRegistry>(json, serializeOptions);
+
+            Assert.IsTrue(clone != null);
+            Assert.IsTrue(clone.MaxEntitySlots == registry.MaxEntitySlots);
+            Assert.IsTrue(clone.NextEntityId == registry.NextEntityId);
+            Assert.IsTrue(clone.EntitiesInScope == registry.EntitiesInScope);
+
+            foreach (var kvp in registry)
+            {
+                Assert.IsTrue(clone[kvp.Key].Equals(registry[kvp.Key]));
+                Assert.IsFalse(clone[kvp.Key] == registry[kvp.Key]);
+            }
+        }
 
         private JsonSerializerOptions CreateTestOptions()
         {
