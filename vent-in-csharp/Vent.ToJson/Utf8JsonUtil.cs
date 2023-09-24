@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace Vent.ToJson
 {
@@ -116,7 +112,7 @@ namespace Vent.ToJson
             {
                 writer.WriteStartObject();
 
-                writer.WriteString(SharedJsonTags.EntityTypeTag, GetClassName(obj.GetType()));
+                writer.WriteString(SharedJsonTags.EntityTypeTag, obj.GetType().GetVentClassName());
 
                 foreach (PropertyInfo propertyInfo in obj.GetType().GetProperties())
                 {
@@ -132,27 +128,6 @@ namespace Vent.ToJson
             }
 
             writer.WriteEndObject();
-        }
-
-        public static string GetClassName(Type type)
-        {
-            var stringBuilder = new StringBuilder();
-
-
-            var genericArgs = type.GetGenericArguments();
-            if (genericArgs != null && genericArgs.Length > 0)
-            {
-                stringBuilder.Append(type.Namespace + "." + type.Name.Substring(0, type.Name.Length - 2));
-                stringBuilder.Append('<');
-                stringBuilder.Append(string.Join(",", genericArgs.Select(arg => GetClassName(arg))));
-                stringBuilder.Append('>');
-            }
-            else
-            {
-                stringBuilder.Append(type.Namespace + "." + type.Name);
-            }
-
-            return stringBuilder.ToString();
         }
 
 

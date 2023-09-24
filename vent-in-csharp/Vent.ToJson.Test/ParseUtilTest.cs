@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Vent.PropertyEntities;
 
 namespace Vent.ToJson.Test
 {
@@ -80,6 +81,62 @@ namespace Vent.ToJson.Test
                     Assert.IsTrue(node[i].GenericTypes[j].MainTypeName == "s" + (j + 1));
                 }
             }
+        }
+
+        [TestMethod]
+        public void VentClassNameTest()
+        {
+            var name = typeof(ObjectWrapper<>).GetVentClassName();
+
+            Assert.IsTrue(name == "Vent.ToJson.Test.ObjectWrapper");
+
+            name = typeof(ObjectWrapper<string>).GetVentClassName();
+
+
+            Assert.IsTrue(name == "Vent.ToJson.Test.ObjectWrapper<System.String>");
+
+            name = typeof(ObjectWrapper<ObjectWrapper<string>>).GetVentClassName();
+
+            Assert.IsTrue(name == "Vent.ToJson.Test.ObjectWrapper<Vent.ToJson.Test.ObjectWrapper<System.String>>");
+
+            name = typeof(Dictionary<string, StringEntity>).GetVentClassName();
+
+            Assert.IsTrue(name == "System.Collections.Generic.Dictionary<System.String,Vent.PropertyEntities.StringEntity>");
+        }
+
+        [TestMethod]
+        public void ResolveTypeTest()
+        {
+            var lookup = ParseUtil.CreateClassLookup(typeof(ObjectWrapper<>).Assembly,
+                                                    typeof(IEntity).Assembly)
+                                                    .WithType(typeof(Dictionary<,>));
+
+            var name = typeof(ObjectWrapper<string>).GetVentClassName();
+
+            Assert.IsTrue(name == "Vent.ToJson.Test.ObjectWrapper<System.String>");
+
+            var node = ParseUtil.ParseVentClassName(name);
+            var nodeType = node.ResolveType(lookup);
+
+            Assert.IsTrue(nodeType == typeof(ObjectWrapper<string>));
+            
+            name = typeof(ObjectWrapper<ObjectWrapper<string>>).GetVentClassName();
+
+            Assert.IsTrue(name == "Vent.ToJson.Test.ObjectWrapper<Vent.ToJson.Test.ObjectWrapper<System.String>>");
+
+            node = ParseUtil.ParseVentClassName(name);
+            nodeType = node.ResolveType(lookup);
+
+            Assert.IsTrue(nodeType == typeof(ObjectWrapper<ObjectWrapper<string>>));
+
+            name = typeof(Dictionary<string, StringEntity>).GetVentClassName();
+
+            Assert.IsTrue(name == "System.Collections.Generic.Dictionary<System.String,Vent.PropertyEntities.StringEntity>");
+
+            node = ParseUtil.ParseVentClassName(name);
+            nodeType = node.ResolveType(lookup);
+
+            Assert.IsTrue(nodeType == typeof(Dictionary<string, StringEntity>));
         }
     }
 }
