@@ -7,12 +7,8 @@ namespace Vent.ToJson
 {
     public class EntityRegistryConverter : JsonConverter<EntityRegistry>
     {
-        private const string EntityInstancesTag = "EntityRegistry";
-        private const string EntityTypeTag = "__entityType";
-
         private readonly Dictionary<string, Type> _classLookup = new();
-
-        
+                
         private class ForwardReference
         {
             public int EntityId { get; set; }
@@ -74,9 +70,9 @@ namespace Vent.ToJson
         {
             var registry = new EntityRegistry
             {
-                Id = JsonUtil.ReadProperty<int>(ref reader, nameof(EntityRegistry.Id)),
-                NextEntityId = JsonUtil.ReadProperty<int>(ref reader, nameof(EntityRegistry.NextEntityId)),
-                MaxEntitySlots = JsonUtil.ReadProperty<int>(ref reader, nameof(EntityRegistry.MaxEntitySlots))
+                Id = Utf8JsonUtil.ReadProperty<int>(ref reader, nameof(EntityRegistry.Id)),
+                NextEntityId = Utf8JsonUtil.ReadProperty<int>(ref reader, nameof(EntityRegistry.NextEntityId)),
+                MaxEntitySlots = Utf8JsonUtil.ReadProperty<int>(ref reader, nameof(EntityRegistry.MaxEntitySlots))
             };
 
             ReadEntityInstances(ref reader, registry);
@@ -92,93 +88,21 @@ namespace Vent.ToJson
             writer.WriteNumber(nameof(EntityRegistry.NextEntityId), registry.NextEntityId);
             writer.WriteNumber(nameof(EntityRegistry.MaxEntitySlots), registry.MaxEntitySlots);
 
-            writer.WritePropertyName(EntityInstancesTag);
+            writer.WritePropertyName(SharedJsonTags.EntityInstancesTag);
                 writer.WriteStartObject();
 
                 foreach (KeyValuePair<int, IEntity> kvp in registry)
                 {
                     writer.WritePropertyName(kvp.Key.ToString());
 
-                    if (kvp.Value != null)
-                    {
-                        writer.WriteStartObject();
-
-                        writer.WriteString(EntityTypeTag, kvp.Value.GetType().FullName);
-
-                        WriteObjectProperties(writer, kvp.Value);
-
-                        writer.WriteEndObject();
-                    }
-                    else
-                    {
-                        writer.WriteNullValue();
-                    }
+                    Utf8JsonUtil.WriteVentObject(writer, kvp.Value);
                 }
 
                 writer.WriteEndObject();
             writer.WriteEndObject();
         }
-
-        private static void WriteObjectProperties(Utf8JsonWriter writer, object obj)
-        {
-            foreach (PropertyInfo property in obj.GetType().GetProperties())
-            {
-                if (property.CanWrite && property.CanRead)
-                {
-                    var value = property.GetValue(obj);
-
-                    writer.WritePropertyName(property.Name);
-                    writer.WriteVentValue(value);
-                }
-            }
-        }
-
-        private static void ReadAny(ref Utf8JsonReader reader)
-        {
-            if (!reader.Read())
-            {
-                if (reader.IsFinalBlock)
-                {
-                    throw new JsonException($"expected more tokens, but encountered the final block.");
-                }
-            }
-        }
-
-        private static void ReadToken(ref Utf8JsonReader reader, JsonTokenType expectedToken)
-        {
-            ReadAny(ref reader);
-            
-            if (reader.TokenType != expectedToken)
-            {
-                throw new JsonException($"expected {expectedToken} but found {reader.TokenType}.");
-            }
-        }
-
-        private static string ReadString(ref Utf8JsonReader reader)
-        {
-            ReadAny(ref reader);
-
-            if (reader.TokenType != JsonTokenType.String)
-            {
-                throw new JsonException($"expected {JsonTokenType.String} but found {reader.TokenType}.");
-            }
-
-            return reader.GetString();
-        }
-
-        private static void ReadPropertyName(ref Utf8JsonReader reader, string propertyName)
-        {
-            ReadAny(ref reader);
-
-            if (reader.TokenType != JsonTokenType.PropertyName
-                || !reader.ValueTextEquals(propertyName))
-            {
-                if (reader.TokenType != JsonTokenType.EndObject)
-                {
-                    throw new JsonException($"expected property name {propertyName} but found {reader.TokenType}.");
-                }
-            }
-        }
+        
+        
 
         private static void ResolveForwardReferences(EntityRegistry registry, 
             Dictionary<object, List<ForwardReference>> forwardReferences)
@@ -194,9 +118,9 @@ namespace Vent.ToJson
 
         private void ReadEntityInstances(ref Utf8JsonReader reader, EntityRegistry registry)
         {
-            ReadPropertyName(ref reader, EntityInstancesTag);
+            reader.ReadPropertyName(SharedJsonTags.EntityInstancesTag);
             {
-                ReadToken(ref reader, JsonTokenType.StartObject);
+                reader.ReadToken(JsonTokenType.StartObject);
                 {
                     var forwardReferences = new Dictionary<object, List<ForwardReference>>();
 
@@ -210,17 +134,28 @@ namespace Vent.ToJson
 
                     ResolveForwardReferences(registry, forwardReferences);
                 }
-                ReadToken(ref reader, JsonTokenType.EndObject);
+                reader.ReadToken(JsonTokenType.EndObject);
             }
         }
 
         private object CreateInstanceFromTypeName(ref Utf8JsonReader reader)
         {
-            var className = ReadString(ref reader);
-
+            var className = reader.ReadString();
+            
             if (className != null && _classLookup.TryGetValue(className, out var type))
             {
-                return (IEntity)Activator.CreateInstance(type);
+                var genericArgsIndex = className.IndexOf("<");
+
+                if (genericArgsIndex >= 0)
+                {
+                    var genericArgs = ParseUtil.ParseGenericArgs(className.Substring(genericArgsIndex));
+                    //var genericType = type.MakeGenericType(genericArgs);
+                    return null; // (IEntity)Activator.CreateInstance(genericType);
+                }
+                else
+                {
+                    return (IEntity)Activator.CreateInstance(type);
+                }
             }
             else
             {
@@ -228,19 +163,21 @@ namespace Vent.ToJson
             }
         }
 
+        
+
         private object CreateObject(
             ref Utf8JsonReader reader, 
             EntityRegistry registry, 
             Dictionary<object, List<ForwardReference>> forwardReferences)
         {
-            ReadAny(ref reader);
+            reader.ReadAnyToken();
 
             switch (reader.TokenType)
             {
                 case JsonTokenType.Null:
                     return null;
                 case JsonTokenType.StartObject:
-                    ReadPropertyName(ref reader, EntityTypeTag);
+                    reader.ReadPropertyName(SharedJsonTags.EntityTypeTag);
                     {
                         var obj = CreateInstanceFromTypeName(ref reader);
                        
@@ -272,9 +209,9 @@ namespace Vent.ToJson
 
                 if (info != null)
                 {
-                    ReadAny(ref reader);
+                    reader.ReadAnyToken();
                     {
-                        var value = ParseValue(ref reader, registry, references, info.PropertyType);
+                        var value = ParseValue(ref reader, registry, references, info.PropertyType, info.GetEntitySerialization());
 
                         if (value is ForwardReference reference)
                         {
@@ -305,7 +242,8 @@ namespace Vent.ToJson
             ref Utf8JsonReader reader, 
             EntityRegistry registry,
             Dictionary<object, List<ForwardReference>> references,
-            Type valueType)
+            Type valueType,
+            EntitySerialization entitySerialization)
         {
             if (reader.TokenType == JsonTokenType.Null)
             {
@@ -321,14 +259,18 @@ namespace Vent.ToJson
             }
             else if (EntityReflection.IsPrimitiveOrString(valueType))
             {
-                return JsonUtil.ReadPrimitive(reader, valueType);
+                return Utf8JsonUtil.ReadPrimitive(reader, valueType);
             }
             else if (typeof(IEnumerable).IsAssignableFrom(valueType))
             {
                 if (valueType.IsGenericType && valueType.GetGenericTypeDefinition() == typeof(List<>))
                 {
-                    return ParseList(ref reader, registry, references, valueType);
+                    return ParseList(ref reader, registry, references, valueType, entitySerialization);
                 }
+            }
+            else
+            {
+                return CreateObject(ref reader, registry, references);
             }
 
             throw new NotImplementedException($"Cannot parse {valueType} to a value");
@@ -338,7 +280,8 @@ namespace Vent.ToJson
         private IList ParseList(ref Utf8JsonReader reader,
             EntityRegistry registry,
             Dictionary<object, List<ForwardReference>> references,
-            Type type)
+            Type type,
+            EntitySerialization entitySerialization)
         {
             var elementType = type.GetGenericArguments()[0];
             var listType = typeof(List<>).MakeGenericType(elementType);
@@ -346,11 +289,11 @@ namespace Vent.ToJson
             
             List<ForwardReference> listEntityReferences = null;
 
-            if (typeof(IEntity).IsAssignableFrom(elementType))
+            if (typeof(IEntity).IsAssignableFrom(elementType) && entitySerialization == EntitySerialization.AsReference)
             {
                 void ParseEntityListElement(ref Utf8JsonReader reader)
                 {
-                    ReadAny(ref reader);
+                    reader.ReadAnyToken();
 
                     if (reader.TokenType != JsonTokenType.EndArray)
                     {
@@ -378,21 +321,21 @@ namespace Vent.ToJson
                     }
                 }
 
-                JsonUtil.ParseJsonArray(ref reader, ParseEntityListElement);
+                Utf8JsonUtil.ParseJsonArray(ref reader, ParseEntityListElement);
             }
             else
             {
                 void ParseListElement(ref Utf8JsonReader reader)
                 {
-                    ReadAny(ref reader);
+                    reader.ReadAnyToken();
 
                     if (reader.TokenType != JsonTokenType.EndArray)
                     {
-                        listValue.Add(ParseValue(ref reader, registry, references, elementType));
+                        listValue.Add(ParseValue(ref reader, registry, references, elementType, entitySerialization));
                     }
                 }
 
-                JsonUtil.ParseJsonArray(ref reader, ParseListElement);
+                Utf8JsonUtil.ParseJsonArray(ref reader, ParseListElement);
             }
 
             return listValue;

@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using Microsoft.Win32;
+using System.Text.Json;
 using Vent.PropertyEntities;
 
 namespace Vent.ToJson.Test
@@ -14,18 +15,7 @@ namespace Vent.ToJson.Test
                 new StringEntity("foo")
             };
 
-            var serializeOptions = CreateTestOptions();
-
-            var json = JsonSerializer.Serialize(registry, serializeOptions);
-
-            var clone = JsonSerializer.Deserialize<EntityRegistry>(json, serializeOptions);
-
-            Assert.IsTrue(clone != null);
-            Assert.IsTrue(clone.MaxEntitySlots == registry.MaxEntitySlots);
-            Assert.IsTrue(clone.NextEntityId == registry.NextEntityId);
-            Assert.IsTrue(clone.EntitiesInScope == registry.EntitiesInScope);
-            Assert.IsTrue(((StringEntity)clone[0]) != ((StringEntity)registry[0]));
-            Assert.IsTrue(((StringEntity)clone[0]).Value == ((StringEntity)registry[0]).Value);
+            CloneAndTest(registry);
         }
 
         [TestMethod]
@@ -38,22 +28,7 @@ namespace Vent.ToJson.Test
                 new StringEntity("qaz")
             };
 
-            var serializeOptions = CreateTestOptions();
-
-            var json = JsonSerializer.Serialize(registry, serializeOptions);
-
-            var clone = JsonSerializer.Deserialize<EntityRegistry>(json, serializeOptions);
-
-            Assert.IsTrue(clone != null);
-            Assert.IsTrue(clone.MaxEntitySlots == registry.MaxEntitySlots);
-            Assert.IsTrue(clone.NextEntityId == registry.NextEntityId);
-            Assert.IsTrue(clone.EntitiesInScope == registry.EntitiesInScope);
-
-            foreach (var kvp in registry)
-            {
-                Assert.IsTrue(((StringEntity)clone[kvp.Key]) != ((StringEntity)registry[kvp.Key]));
-                Assert.IsTrue(((StringEntity)clone[kvp.Key]).Value == ((StringEntity)registry[kvp.Key]).Value);
-            }
+            CloneAndTest(registry);
         }
 
         [TestMethod]
@@ -65,21 +40,7 @@ namespace Vent.ToJson.Test
                 new MultiPropertyTestEntity(false, "bar", 'b', -0, 1, float.MaxValue, Double.MinValue),
             };
 
-            var serializeOptions = CreateTestOptions();
-
-            var json = JsonSerializer.Serialize(registry, serializeOptions);
-
-            var clone = JsonSerializer.Deserialize<EntityRegistry>(json, serializeOptions);
-
-            Assert.IsTrue(clone != null);
-            Assert.IsTrue(clone.MaxEntitySlots == registry.MaxEntitySlots);
-            Assert.IsTrue(clone.NextEntityId == registry.NextEntityId);
-            Assert.IsTrue(clone.EntitiesInScope == registry.EntitiesInScope);
-
-            foreach (var kvp in registry)
-            {
-                Assert.IsTrue(clone[kvp.Key].Equals(registry[kvp.Key]));
-            }
+            CloneAndTest(registry);
         }
 
         [TestMethod]
@@ -99,21 +60,7 @@ namespace Vent.ToJson.Test
             // add entity with a null reference
             registry.Add(new EntityPropertyEntity());
 
-            var serializeOptions = CreateTestOptions();
-
-            var json = JsonSerializer.Serialize(registry, serializeOptions);
-
-            var clone = JsonSerializer.Deserialize<EntityRegistry>(json, serializeOptions);
-
-            Assert.IsTrue(clone != null);
-            Assert.IsTrue(clone.MaxEntitySlots == registry.MaxEntitySlots);
-            Assert.IsTrue(clone.NextEntityId == registry.NextEntityId);
-            Assert.IsTrue(clone.EntitiesInScope == registry.EntitiesInScope);
-
-            foreach (var kvp in registry)
-            {
-                Assert.IsTrue(clone[kvp.Key].Equals(registry[kvp.Key]));
-            }
+            CloneAndTest(registry);
         }
 
         [TestMethod]
@@ -127,28 +74,22 @@ namespace Vent.ToJson.Test
                 }
             };
 
-            var serializeOptions = CreateTestOptions();
-
-            var json = JsonSerializer.Serialize(registry, serializeOptions);
-
-            var clone = JsonSerializer.Deserialize<EntityRegistry>(json, serializeOptions);
-
-            Assert.IsTrue(clone != null);
-            Assert.IsTrue(clone.MaxEntitySlots == registry.MaxEntitySlots);
-            Assert.IsTrue(clone.NextEntityId == registry.NextEntityId);
-            Assert.IsTrue(clone.EntitiesInScope == registry.EntitiesInScope);
-
-            foreach (var kvp in registry)
-            {
-                Assert.IsTrue(clone[kvp.Key].Equals(registry[kvp.Key]));
-                Assert.IsFalse(clone[kvp.Key] == registry[kvp.Key]);
-            }
+            CloneAndTest(registry);
         }
 
+        /// <summary>
+        /// Test an Entity list with both backward and forward entity references
+        /// </summary>
         [TestMethod]
         public void EntityListEntityTest()
         {
+            // backward reference - ie foo is registered before the list, so it
+            // will exist when the list is deserialized            
             var foo = new StringEntity("foo");
+
+            // forward reference - ie bar is registered after the list, so it
+            // will not exist when the list is deserialized and will need
+            // to be resolved after the deserialization
             var bar = new StringEntity("bar");
 
             var registry = new EntityRegistry()
@@ -161,22 +102,19 @@ namespace Vent.ToJson.Test
                 bar
             };
 
-            var serializeOptions = CreateTestOptions();
+            CloneAndTest(registry);
+        }
 
-            var json = JsonSerializer.Serialize(registry, serializeOptions);
-
-            var clone = JsonSerializer.Deserialize<EntityRegistry>(json, serializeOptions);
-
-            Assert.IsTrue(clone != null);
-            Assert.IsTrue(clone.MaxEntitySlots == registry.MaxEntitySlots);
-            Assert.IsTrue(clone.NextEntityId == registry.NextEntityId);
-            Assert.IsTrue(clone.EntitiesInScope == registry.EntitiesInScope);
-
-            foreach (var kvp in registry)
+        [TestMethod]
+        public void ObjectWrapperTest()
+        {
+            CloneAndTest(new EntityRegistry()
             {
-                Assert.IsTrue(clone[kvp.Key].Equals(registry[kvp.Key]));
-                Assert.IsFalse(clone[kvp.Key] == registry[kvp.Key]);
-            }
+                new ObjectWrapper<MultiPropertyTestEntity>(
+                    new MultiPropertyTestEntity(true, "foo", 'x', -42,43, 0.1f, -0.1)
+                ),
+                new ObjectWrapper<MultiPropertyTestEntity>()
+            });
         }
 
         // xxx to test
@@ -201,6 +139,31 @@ namespace Vent.ToJson.Test
                     converter
                 }
             };
+        }
+
+        private void CloneAndTest(EntityRegistry registry)
+        {
+            var serializeOptions = CreateTestOptions();
+            var json = JsonSerializer.Serialize(registry, serializeOptions);
+            var clone = JsonSerializer.Deserialize<EntityRegistry>(json, serializeOptions);
+
+            AssertEqualsButNotCopies(registry, clone);
+        }
+
+        private void AssertEqualsButNotCopies(EntityRegistry source, EntityRegistry clone)
+        {
+            Assert.IsTrue(source != null);
+            Assert.IsTrue(clone != null);
+            Assert.IsTrue(clone != source);
+            Assert.IsTrue(clone.MaxEntitySlots == source.MaxEntitySlots);
+            Assert.IsTrue(clone.NextEntityId == source.NextEntityId);
+            Assert.IsTrue(clone.EntitiesInScope == source.EntitiesInScope);
+
+            foreach (var kvp in source)
+            {
+                Assert.IsTrue(clone[kvp.Key].Equals(source[kvp.Key]));
+                Assert.IsFalse(clone[kvp.Key] == source[kvp.Key]);
+            }
         }
     }
 }

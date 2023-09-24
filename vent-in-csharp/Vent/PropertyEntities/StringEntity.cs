@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Vent.PropertyEntities
+﻿namespace Vent.PropertyEntities
 {
     public class StringEntity : PropertyEntity<string>
     {
@@ -23,8 +17,5 @@ namespace Vent.PropertyEntities
         {
             return HashCode.Combine(Id, Value);
         }
-
-
     }
-
 }

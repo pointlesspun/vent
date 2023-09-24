@@ -11,7 +11,7 @@ namespace Vent
     /// <typeparam name="T"></typeparam>
     public class PropertyEntity<T> : EntityBase
     {
-        public T Value { get; set; }
+        public virtual T Value { get; set; }
 
         public PropertyEntity() 
         {

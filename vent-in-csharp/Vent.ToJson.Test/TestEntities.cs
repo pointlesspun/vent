@@ -3,9 +3,21 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Vent.PropertyEntities;
 
 namespace Vent.ToJson.Test
 {
+
+    public class ObjectWrapper<T> : ObjectEntity<T> where T : class
+    {
+        [SerializeAsValue]
+        public override T Value { get => base.Value; set => base.Value = value; }
+
+        public ObjectWrapper() : base() { }
+
+        public ObjectWrapper(T value) : base(value) { }
+    }
+
     /// <summary>
     /// Entity with multiple primitive properties for testing
     /// </summary>
@@ -56,6 +68,9 @@ namespace Vent.ToJson.Test
         }
     }
 
+    /// <summary>
+    /// Entity containing a reference to another entity
+    /// </summary>
     public class EntityPropertyEntity : EntityBase
     {
         public IEntity Other { get; set; }

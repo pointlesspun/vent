@@ -24,8 +24,6 @@ namespace Vent.ToJson
             RegisterEntityClasses(assemblies);
         }
 
-        
-
         public StoreConverter RegisterEntityClasses() => 
             RegisterEntityClasses(AppDomain.CurrentDomain.GetAssemblies());
 
