@@ -237,11 +237,15 @@ namespace Vent.ToJson
             {
                 return Utf8JsonReaderExtensions.ReadPrimitive(reader, valueType);
             }
-            else if (typeof(IEnumerable).IsAssignableFrom(valueType))
+            else if (typeof(IEnumerable).IsAssignableFrom(valueType) && valueType.IsGenericType)
             {
-                if (valueType.IsGenericType && valueType.GetGenericTypeDefinition() == typeof(List<>))
+                if (valueType.GetGenericTypeDefinition() == typeof(List<>))
                 {
-                    return ParseList(ref reader, registry, references, valueType, entitySerialization);
+                    return ReadList(ref reader, registry, references, valueType, entitySerialization);
+                }
+                else if (valueType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
+                {
+                    return ReadDictionary(ref reader, registry, references, valueType, entitySerialization);
                 }
             }
             else if (reader.TokenType == JsonTokenType.StartObject)
@@ -252,7 +256,7 @@ namespace Vent.ToJson
             throw new NotImplementedException($"Cannot parse {valueType} to a value");
         }
         
-        private IList ParseList(ref Utf8JsonReader reader,
+        private IList ReadList(ref Utf8JsonReader reader,
             EntityRegistry registry,
             Dictionary<object, List<ForwardReference>> references,
             Type type,
@@ -260,60 +264,122 @@ namespace Vent.ToJson
         {
             var elementType = type.GetGenericArguments()[0];
             var listType = typeof(List<>).MakeGenericType(elementType);
-            var listValue = (IList)Activator.CreateInstance(listType);
             
-            List<ForwardReference> listEntityReferences = null;
-
             if (typeof(IEntity).IsAssignableFrom(elementType) && entitySerialization == EntitySerialization.AsReference)
             {
-                void ParseEntityListElement(ref Utf8JsonReader reader)
-                {
-                    reader.ReadAnyToken();
-
-                    if (reader.TokenType != JsonTokenType.EndArray)
-                    {
-                        var key = reader.GetInt32();
-                        if (registry.ContainsKey(key))
-                        {
-                            listValue.Add(registry[key]);
-                        }
-                        else
-                        {
-                            if (listEntityReferences == null)
-                            {
-                                listEntityReferences = new List<ForwardReference>();
-                                references[listValue] = listEntityReferences;
-                            }
-
-                            listEntityReferences.Add(new ForwardReference()
-                            {
-                                EntityId = key,
-                                Key = listValue.Count
-                            });
-
-                            listValue.Add(null);
-                        }
-                    }
-                }
-
-                Utf8JsonReaderExtensions.ParseJsonArray(ref reader, ParseEntityListElement);
+                return ReadEntityList(ref reader, registry, references, listType);
             }
             else
             {
-                void ParseListElement(ref Utf8JsonReader reader)
-                {
-                    reader.ReadAnyToken();
+                return ReadValueList(ref reader, registry, references, listType, elementType, entitySerialization);
+            }            
+        }
 
-                    if (reader.TokenType != JsonTokenType.EndArray)
+        private IList ReadEntityList(ref Utf8JsonReader reader,
+            EntityRegistry registry,
+            Dictionary<object, List<ForwardReference>> references,
+            Type listType)
+        {
+            List<ForwardReference> listEntityReferences = null;
+            var listValue = (IList)Activator.CreateInstance(listType);
+
+            void ParseEntityListElement(ref Utf8JsonReader reader)
+            {
+                reader.ReadAnyToken();
+
+                if (reader.TokenType != JsonTokenType.EndArray)
+                {
+                    var key = reader.GetInt32();
+                    if (registry.ContainsKey(key))
                     {
-                        listValue.Add(ParseValue(ref reader, registry, references, elementType, entitySerialization));
+                        listValue.Add(registry[key]);
+                    }
+                    else
+                    {
+                        if (listEntityReferences == null)
+                        {
+                            listEntityReferences = new List<ForwardReference>();
+                            references[listValue] = listEntityReferences;
+                        }
+
+                        listEntityReferences.Add(new ForwardReference()
+                        {
+                            EntityId = key,
+                            Key = listValue.Count
+                        });
+
+                        listValue.Add(null);
                     }
                 }
-
-                Utf8JsonReaderExtensions.ParseJsonArray(ref reader, ParseListElement);
             }
 
+            Utf8JsonReaderExtensions.ParseJsonArray(ref reader, ParseEntityListElement);
             return listValue;
+        }
+
+        private IList ReadValueList(ref Utf8JsonReader reader,
+         EntityRegistry registry,
+         Dictionary<object, List<ForwardReference>> references,
+         Type listType, Type listElementType,
+         EntitySerialization entitySerialization = EntitySerialization.AsReference)
+        {
+            var listValue = (IList)Activator.CreateInstance(listType);
+
+            void ParseListElement(ref Utf8JsonReader reader)
+            {
+                reader.ReadAnyToken();
+
+                if (reader.TokenType != JsonTokenType.EndArray)
+                {
+                    listValue.Add(ParseValue(ref reader, registry, references, listElementType, entitySerialization));
+                }
+            }
+
+            Utf8JsonReaderExtensions.ParseJsonArray(ref reader, ParseListElement);
+
+            return listValue;
+        }
+
+
+        private IDictionary ReadDictionary(ref Utf8JsonReader reader,
+            EntityRegistry registry,
+            Dictionary<object, List<ForwardReference>> references,
+            Type type,
+            EntitySerialization entitySerialization = EntitySerialization.AsReference)
+        {
+            var keyType = type.GetGenericArguments()[0];
+            var valueType = type.GetGenericArguments()[1];
+            var dictionary = (IDictionary) Activator.CreateInstance(type);
+            List<ForwardReference> objectReferences = null;
+
+            while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
+            {
+                var key = reader.GetString();
+
+                reader.ReadAnyToken();
+                {
+                    var value = ParseValue(ref reader, registry, references, valueType, entitySerialization);
+
+                    if (value is ForwardReference reference)
+                    {
+                        reference.Key = key;
+
+                        if (objectReferences == null)
+                        {
+                            objectReferences = new List<ForwardReference>();
+                            references[dictionary] = objectReferences;
+                        }
+
+                        objectReferences.Add(reference);
+                    }
+                    else
+                    {
+                        dictionary[key] = value;
+                    }
+                }
+            }
+
+            return dictionary;
         }
     }
 }

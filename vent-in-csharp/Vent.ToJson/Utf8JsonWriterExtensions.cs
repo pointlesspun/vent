@@ -84,15 +84,37 @@ namespace Vent.ToJson
             IDictionary dictionary,
             EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {
+            var keyType = dictionary.GetType().GetGenericArguments()[0];
+
+            Contract.Requires<EntitySerializationException>(IsValidDictionaryKey(keyType), $"Cannot serialize dictionary keys of type {keyType}");
+
             writer.WriteStartObject();
+
+            Action<object> serializeKey;
+            
+            if (EntityReflection.IsPrimitiveOrString(keyType))
+            {
+                serializeKey = key => writer.WritePropertyName(key.ToString());
+            }
+            else
+            {
+                serializeKey = key => writer.WritePropertyName(((IEntity)key).Id.ToString());
+            }
 
             foreach (DictionaryEntry entry in dictionary)
             {
-                writer.WritePropertyName(entry.Key.ToString());
+                serializeKey(entry.Key);
                 WriteVentValue(writer, entry.Value, entitySerialization);
             }
 
             writer.WriteEndObject();
+        }
+
+        public static bool IsValidDictionaryKey(Type keyType)
+        {
+            return keyType != null
+                && (EntityReflection.IsPrimitiveOrString(keyType)
+                || EntityReflection.IsEntity(keyType));
         }
 
         public static void WriteVentObject(this Utf8JsonWriter writer, object obj)

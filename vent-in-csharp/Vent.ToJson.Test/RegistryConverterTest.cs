@@ -1,4 +1,4 @@
-﻿using Microsoft.Win32;
+﻿using System.Text.Encodings.Web;
 using System.Text.Json;
 using Vent.PropertyEntities;
 
@@ -143,21 +143,57 @@ namespace Vent.ToJson.Test
             });
         }
 
+        [TestMethod]
+        public void StringDictionaryTest()
+        {
+            var stringDictionary = new ObjectEntity<Dictionary<string, string>>()
+            {
+                Value = new Dictionary<string, string>()
+                    {
+                        { "fooKey", "fooValue" },
+                        { "barKey", "barValue" },
+                        { "qazKey", "qazValue" },
+                    }
+            };
+
+            CloneAndTest(new EntityRegistry()
+            {
+                stringDictionary
+            },
+            (source, clone) =>
+            {
+                AssertRegistriesPropertiesMatch(source, clone);
+                var sourceDict = source[stringDictionary.Id] as ObjectEntity<Dictionary<string, string>>;
+                var cloneDict = clone[stringDictionary.Id] as ObjectEntity<Dictionary<string, string>>;
+
+                Assert.IsTrue(cloneDict != sourceDict);
+
+                foreach (var kvp in sourceDict.Value)
+                {
+                    Assert.IsTrue(cloneDict.Value[kvp.Key] == kvp.Value);
+                } 
+            });
+        }
+
         // xxx to test
-        // - EntityStore in EntityStore (special case)
-        // - Entity with Dictionary
-        // - Entity with EntityDictionary
+        // - Entity with Dictionary, EntityDictionary and a EntityDictionary marked with SerializeAsValue
         // - Entity with complex object referencing an entity
         // - Entity with complex object using a list 
         // - Entity with complex object using an entity list 
+        // - EntityStore in EntityStore (special case), move entity serialization to vent
         // - Entity History property
-        private JsonSerializerOptions CreateTestOptions()
+        private static JsonSerializerOptions CreateTestOptions()
         {
-            var classLookup = ClassLookup.CreateFrom(typeof(MultiPropertyTestEntity).Assembly, typeof(StringEntity).Assembly);
+            var classLookup = ClassLookup
+                                .CreateFrom(typeof(MultiPropertyTestEntity).Assembly, typeof(StringEntity).Assembly)
+                                .WithType(typeof(Dictionary<,>));
+
             var converter = new EntityRegistryConverter(classLookup);
             return new JsonSerializerOptions
             {
                 WriteIndented = true,
+                // don't want to see escaped characters in the tests
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
                 Converters =
                 {
                     converter
@@ -165,16 +201,23 @@ namespace Vent.ToJson.Test
             };
         }
 
-        private void CloneAndTest(EntityRegistry registry)
+        private void CloneAndTest(EntityRegistry registry, Action<EntityRegistry, EntityRegistry>  testActions = null)
         {
             var serializeOptions = CreateTestOptions();
             var json = JsonSerializer.Serialize(registry, serializeOptions);
             var clone = JsonSerializer.Deserialize<EntityRegistry>(json, serializeOptions);
 
-            AssertEqualsButNotCopies(registry, clone);
+            if (testActions == null)
+            {
+                AssertEqualsButNotCopies(registry, clone);
+            }
+            else
+            {
+                testActions(registry, clone);
+            }
         }
 
-        private void AssertEqualsButNotCopies(EntityRegistry source, EntityRegistry clone)
+        private void AssertRegistriesPropertiesMatch(EntityRegistry source, EntityRegistry clone)
         {
             Assert.IsTrue(source != null);
             Assert.IsTrue(clone != null);
@@ -182,6 +225,11 @@ namespace Vent.ToJson.Test
             Assert.IsTrue(clone.MaxEntitySlots == source.MaxEntitySlots);
             Assert.IsTrue(clone.NextEntityId == source.NextEntityId);
             Assert.IsTrue(clone.EntitiesInScope == source.EntitiesInScope);
+        }
+
+        private void AssertEqualsButNotCopies(EntityRegistry source, EntityRegistry clone)
+        {
+            AssertRegistriesPropertiesMatch(source, clone);
 
             foreach (var kvp in source)
             {
