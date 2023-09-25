@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Vent.PropertyEntities;
+﻿using Vent.PropertyEntities;
 
 namespace Vent.ToJson.Test
 {
@@ -13,72 +8,72 @@ namespace Vent.ToJson.Test
         [TestMethod]
         public void EmptyTypeParseTest()
         {
-            Assert.IsNull(ParseUtil.ParseGenericArgs(null).node);
-            Assert.IsNull(ParseUtil.ParseGenericArgs("").node);
-            Assert.IsNull(ParseUtil.ParseGenericArgs("  ").node);
-            Assert.IsNull(ParseUtil.ParseGenericArgs(" < > ").node);
-            Assert.IsNull(ParseUtil.ParseGenericArgs("<>").node);
+            Assert.IsNull(VentClassName.ParseGenericArgs(null).node);
+            Assert.IsNull(VentClassName.ParseGenericArgs("").node);
+            Assert.IsNull(VentClassName.ParseGenericArgs("  ").node);
+            Assert.IsNull(VentClassName.ParseGenericArgs(" < > ").node);
+            Assert.IsNull(VentClassName.ParseGenericArgs("<>").node);
         }
 
         [TestMethod]
         public void SingleTypeParseTest()
         {
-            Assert.IsTrue(ParseUtil.ParseGenericArgs("  < type >").node[0].MainTypeName == "type");
-            Assert.IsTrue(ParseUtil.ParseGenericArgs("<type>").node[0].MainTypeName == "type");
+            Assert.IsTrue(VentClassName.ParseGenericArgs("  < type >").node[0].TypeName == "type");
+            Assert.IsTrue(VentClassName.ParseGenericArgs("<type>").node[0].TypeName == "type");
         }
 
         [TestMethod]
         public void MultipleTypeParseTest()
         {
-            var result = ParseUtil.ParseGenericArgs("  < type1,type2 , type3, type4,type5>");
+            var result = VentClassName.ParseGenericArgs("  < type1,type2 , type3, type4,type5>");
 
             Assert.IsNotNull(result);
             for (var i = 0; i < 5; i++)
             {
-                Assert.IsTrue(result.node[i].MainTypeName == "type" + (i+1));
+                Assert.IsTrue(result.node[i].TypeName == "type" + (i+1));
             }
         }
 
         [TestMethod]
         public void SingleCompoundTypeParseTest()
         {
-            var (node, currentIndex) = ParseUtil.ParseGenericArgs("<type<subtype>>");
-            Assert.IsTrue(node[0].MainTypeName == "type");
-            Assert.IsTrue(node[0].GenericTypes[0].MainTypeName == "subtype");
+            var (node, currentIndex) = VentClassName.ParseGenericArgs("<type<subtype>>");
+            Assert.IsTrue(node[0].TypeName == "type");
+            Assert.IsTrue(node[0].GenericTypeNames[0].TypeName == "subtype");
         }
 
         [TestMethod]
         public void MultipleCompoundTypeParseTest()
         {
-            var (node, currentIndex) = ParseUtil.ParseGenericArgs("<type1<subtype1>, type2 < subtype2 >, type3 <  subtype3>>");
+            var (node, currentIndex) = VentClassName.ParseGenericArgs("<type1<subtype1>, type2 < subtype2 >, type3 <  subtype3>>");
 
             for (var i = 0; i < 3; i++)
             {
-                Assert.IsTrue(node[i].MainTypeName == "type" + (i + 1));
-                Assert.IsTrue(node[i].GenericTypes[0].MainTypeName == "subtype" + (i + 1));
+                Assert.IsTrue(node[i].TypeName == "type" + (i + 1));
+                Assert.IsTrue(node[i].GenericTypeNames[0].TypeName == "subtype" + (i + 1));
             }
         }
 
         [TestMethod]
         public void SingleComplexCompoundTypeParseTest()
         {
-            var (node, currentIndex) = ParseUtil.ParseGenericArgs("<type<subtype1, subtype2>>");
-            Assert.IsTrue(node[0].MainTypeName == "type");
-            Assert.IsTrue(node[0].GenericTypes[0].MainTypeName == "subtype1");
-            Assert.IsTrue(node[0].GenericTypes[1].MainTypeName == "subtype2");
+            var (node, currentIndex) = VentClassName.ParseGenericArgs("<type<subtype1, subtype2>>");
+            Assert.IsTrue(node[0].TypeName == "type");
+            Assert.IsTrue(node[0].GenericTypeNames[0].TypeName == "subtype1");
+            Assert.IsTrue(node[0].GenericTypeNames[1].TypeName == "subtype2");
         }
         
         [TestMethod]
         public void MultipleComplexCompoundTypeParseTest()
         {
-            var (node, currentIndex) = ParseUtil.ParseGenericArgs("<t1<s1, s2>, t2 < s1, s2 >>");
+            var (node, currentIndex) = VentClassName.ParseGenericArgs("<t1<s1, s2>, t2 < s1, s2 >>");
 
             for (var i = 0; i < 2; i++)
             {
-                Assert.IsTrue(node[i].MainTypeName == "t" + (i + 1));
+                Assert.IsTrue(node[i].TypeName == "t" + (i + 1));
                 for (var j = 0; j < 2; j++)
                 {
-                    Assert.IsTrue(node[i].GenericTypes[j].MainTypeName == "s" + (j + 1));
+                    Assert.IsTrue(node[i].GenericTypeNames[j].TypeName == "s" + (j + 1));
                 }
             }
         }
@@ -86,20 +81,20 @@ namespace Vent.ToJson.Test
         [TestMethod]
         public void VentClassNameTest()
         {
-            var name = typeof(ObjectWrapper<>).GetVentClassName();
+            var name = typeof(ObjectWrapper<>).ToVentClassName();
 
             Assert.IsTrue(name == "Vent.ToJson.Test.ObjectWrapper");
 
-            name = typeof(ObjectWrapper<string>).GetVentClassName();
+            name = typeof(ObjectWrapper<string>).ToVentClassName();
 
 
             Assert.IsTrue(name == "Vent.ToJson.Test.ObjectWrapper<System.String>");
 
-            name = typeof(ObjectWrapper<ObjectWrapper<string>>).GetVentClassName();
+            name = typeof(ObjectWrapper<ObjectWrapper<string>>).ToVentClassName();
 
             Assert.IsTrue(name == "Vent.ToJson.Test.ObjectWrapper<Vent.ToJson.Test.ObjectWrapper<System.String>>");
 
-            name = typeof(Dictionary<string, StringEntity>).GetVentClassName();
+            name = typeof(Dictionary<string, StringEntity>).ToVentClassName();
 
             Assert.IsTrue(name == "System.Collections.Generic.Dictionary<System.String,Vent.PropertyEntities.StringEntity>");
         }
@@ -107,33 +102,33 @@ namespace Vent.ToJson.Test
         [TestMethod]
         public void ResolveTypeTest()
         {
-            var lookup = ParseUtil.CreateClassLookup(typeof(ObjectWrapper<>).Assembly,
+            var lookup = ClassLookup.CreateFrom(typeof(ObjectWrapper<>).Assembly,
                                                     typeof(IEntity).Assembly)
                                                     .WithType(typeof(Dictionary<,>));
 
-            var name = typeof(ObjectWrapper<string>).GetVentClassName();
+            var name = typeof(ObjectWrapper<string>).ToVentClassName();
 
             Assert.IsTrue(name == "Vent.ToJson.Test.ObjectWrapper<System.String>");
 
-            var node = ParseUtil.ParseVentClassName(name);
+            var node = VentClassName.ParseVentClassName(name);
             var nodeType = node.ResolveType(lookup);
 
             Assert.IsTrue(nodeType == typeof(ObjectWrapper<string>));
             
-            name = typeof(ObjectWrapper<ObjectWrapper<string>>).GetVentClassName();
+            name = typeof(ObjectWrapper<ObjectWrapper<string>>).ToVentClassName();
 
             Assert.IsTrue(name == "Vent.ToJson.Test.ObjectWrapper<Vent.ToJson.Test.ObjectWrapper<System.String>>");
 
-            node = ParseUtil.ParseVentClassName(name);
+            node = VentClassName.ParseVentClassName(name);
             nodeType = node.ResolveType(lookup);
 
             Assert.IsTrue(nodeType == typeof(ObjectWrapper<ObjectWrapper<string>>));
 
-            name = typeof(Dictionary<string, StringEntity>).GetVentClassName();
+            name = typeof(Dictionary<string, StringEntity>).ToVentClassName();
 
             Assert.IsTrue(name == "System.Collections.Generic.Dictionary<System.String,Vent.PropertyEntities.StringEntity>");
 
-            node = ParseUtil.ParseVentClassName(name);
+            node = VentClassName.ParseVentClassName(name);
             nodeType = node.ResolveType(lookup);
 
             Assert.IsTrue(nodeType == typeof(Dictionary<string, StringEntity>));

@@ -1,5 +1,7 @@
-﻿using System.Collections;
+﻿using Microsoft.Win32;
+using System.Collections;
 using System.Reflection;
+using System.Reflection.PortableExecutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -7,7 +9,7 @@ namespace Vent.ToJson
 {
     public class EntityRegistryConverter : JsonConverter<EntityRegistry>
     {
-        private readonly Dictionary<string, Type> _classLookup = new();
+        private readonly Dictionary<string, Type> _classLookup;
                 
         private class ForwardReference
         {
@@ -40,32 +42,11 @@ namespace Vent.ToJson
         {
         }
 
-        public EntityRegistryConverter(params Assembly[] assemblies)
+        public EntityRegistryConverter(Dictionary<string, Type> classLookup)
         {
-            RegisterEntityClasses(assemblies);
+            _classLookup = classLookup;
         }
-
-
-        public EntityRegistryConverter RegisterEntityClasses() =>
-            RegisterEntityClasses(AppDomain.CurrentDomain.GetAssemblies());
-
-        public EntityRegistryConverter RegisterEntityClasses(params Assembly[] assemblies)
-        {
-            var entityType = typeof(IEntity);
-
-            foreach (var assembly in assemblies)
-            {
-                foreach (var type in assembly.GetTypes().Where(p =>
-                    p.IsClass && !p.IsAbstract
-                    && entityType.IsAssignableFrom(p)))
-                {
-                    _classLookup[type.FullName] = type;
-                }
-            }
-
-            return this;
-        }
-
+                
         public override EntityRegistry Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             var registry = new EntityRegistry
@@ -79,7 +60,6 @@ namespace Vent.ToJson
             return registry;
        }
     
-
         public override void Write(Utf8JsonWriter writer, EntityRegistry registry, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
@@ -89,21 +69,20 @@ namespace Vent.ToJson
             writer.WriteNumber(nameof(EntityRegistry.MaxEntitySlots), registry.MaxEntitySlots);
 
             writer.WritePropertyName(SharedJsonTags.EntityInstancesTag);
+            {
                 writer.WriteStartObject();
-
-                foreach (KeyValuePair<int, IEntity> kvp in registry)
                 {
-                    writer.WritePropertyName(kvp.Key.ToString());
-
-                    Utf8JsonUtil.WriteVentObject(writer, kvp.Value);
+                    foreach (KeyValuePair<int, IEntity> kvp in registry)
+                    {
+                        writer.WritePropertyName(kvp.Key.ToString());
+                        writer.WriteVentObject(kvp.Value);
+                    }
                 }
-
                 writer.WriteEndObject();
+            }
             writer.WriteEndObject();
         }
-        
-        
-
+                
         private static void ResolveForwardReferences(EntityRegistry registry, 
             Dictionary<object, List<ForwardReference>> forwardReferences)
         {
@@ -127,7 +106,7 @@ namespace Vent.ToJson
                     while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
                     {
                         var key = int.Parse(reader.GetString());
-                        var entity = CreateObject(ref reader, registry, forwardReferences) as IEntity;
+                        var entity = ParseNullOrVentObject(ref reader, registry, forwardReferences) as IEntity;
 
                         registry.SetSlot(key, entity);                      
                     }
@@ -142,30 +121,27 @@ namespace Vent.ToJson
         {
             var className = reader.ReadString();
             
-            if (className != null && _classLookup.TryGetValue(className, out var type))
+            if (className != null)
             {
-                var genericArgsIndex = className.IndexOf("<");
-
-                if (genericArgsIndex >= 0)
-                {
-                    var genericArgs = ParseUtil.ParseGenericArgs(className.Substring(genericArgsIndex));
-                    //var genericType = type.MakeGenericType(genericArgs);
-                    return null; // (IEntity)Activator.CreateInstance(genericType);
-                }
-                else
-                {
-                    return (IEntity)Activator.CreateInstance(type);
-                }
+                return className.CreateInstance(_classLookup);
             }
             else
             {
-                throw new JsonException($"Cannot instantiate entity of class {className}, it was not found in the classRegistry");
+                throw new JsonException($"Cannot instantiate entity with a null {className}");
             }
         }
 
-        
-
-        private object CreateObject(
+        /// <summary>
+        /// Creates an object from json based assuming a vent specific convention, ie:
+        ///  * Expects the next token in the reader to be null or a start object. If null is found null will be returned.
+        ///  * If the token is a start object, ParseVentObjectProperties is called
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="registry"></param>
+        /// <param name="forwardReferences"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        private object ParseNullOrVentObject(
             ref Utf8JsonReader reader, 
             EntityRegistry registry, 
             Dictionary<object, List<ForwardReference>> forwardReferences)
@@ -177,20 +153,23 @@ namespace Vent.ToJson
                 case JsonTokenType.Null:
                     return null;
                 case JsonTokenType.StartObject:
-                    reader.ReadPropertyName(SharedJsonTags.EntityTypeTag);
-                    {
-                        var obj = CreateInstanceFromTypeName(ref reader);
-                       
-                        ParseObjectProperties(ref reader, registry, forwardReferences, obj);
-
-                        return obj;
-                    }
-                   
+                    return ParseVentObject(ref reader, registry, forwardReferences);
                 default:
                     throw new NotImplementedException($"Unexpected token {reader.TokenType} encountered");
             }
         }
 
+        private object ParseVentObject(ref Utf8JsonReader reader,
+            EntityRegistry registry,
+            Dictionary<object, List<ForwardReference>> forwardReferences)
+        {
+            reader.ReadPropertyName(SharedJsonTags.EntityTypeTag);
+            {
+                var obj = CreateInstanceFromTypeName(ref reader);
+                ParseObjectProperties(ref reader, registry, forwardReferences, obj);
+                return obj;
+            }
+        }
 
         private void ParseObjectProperties(
                 ref Utf8JsonReader reader,
@@ -243,13 +222,13 @@ namespace Vent.ToJson
             EntityRegistry registry,
             Dictionary<object, List<ForwardReference>> references,
             Type valueType,
-            EntitySerialization entitySerialization)
+            EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {
             if (reader.TokenType == JsonTokenType.Null)
             {
                 return null;
             }
-            else if (EntityReflection.IsEntity(valueType))
+            else if (EntityReflection.IsEntity(valueType) && entitySerialization == EntitySerialization.AsReference)
             {
                 var key = reader.GetInt32();
 
@@ -268,9 +247,9 @@ namespace Vent.ToJson
                     return ParseList(ref reader, registry, references, valueType, entitySerialization);
                 }
             }
-            else
+            else if (reader.TokenType == JsonTokenType.StartObject)
             {
-                return CreateObject(ref reader, registry, references);
+                return ParseVentObject(ref reader, registry, references);
             }
 
             throw new NotImplementedException($"Cannot parse {valueType} to a value");
@@ -281,7 +260,7 @@ namespace Vent.ToJson
             EntityRegistry registry,
             Dictionary<object, List<ForwardReference>> references,
             Type type,
-            EntitySerialization entitySerialization)
+            EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {
             var elementType = type.GetGenericArguments()[0];
             var listType = typeof(List<>).MakeGenericType(elementType);

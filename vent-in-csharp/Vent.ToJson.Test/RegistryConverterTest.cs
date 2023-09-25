@@ -105,6 +105,7 @@ namespace Vent.ToJson.Test
             CloneAndTest(registry);
         }
 
+
         [TestMethod]
         public void ObjectWrapperTest()
         {
@@ -121,16 +122,14 @@ namespace Vent.ToJson.Test
         // - EntityStore in EntityStore (special case)
         // - Entity with Dictionary
         // - Entity with EntityDictionary
-        // - Entity with complex object as property
         // - Entity with complex object referencing an entity
         // - Entity with complex object using a list 
         // - Entity with complex object using an entity list 
         // - Entity History property
-        // - Attribute indicating an entity property is not in the store and owned by the encapsulating
-        //   class
         private JsonSerializerOptions CreateTestOptions()
         {
-            var converter = new EntityRegistryConverter(typeof(MultiPropertyTestEntity).Assembly, typeof(StringEntity).Assembly);
+            var classLookup = ClassLookup.CreateFrom(typeof(MultiPropertyTestEntity).Assembly, typeof(StringEntity).Assembly);
+            var converter = new EntityRegistryConverter(classLookup);
             return new JsonSerializerOptions
             {
                 WriteIndented = true,
