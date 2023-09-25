@@ -105,15 +105,19 @@ namespace Vent.ToJson.Test
             CloneAndTest(registry);
         }
 
-
+        /// <summary>
+        /// Test cloning a registry containing an object which has an entity with an entity property
+        /// marked as serialize as value rather than the default (serialize as reference)
+        /// </summary>
         [TestMethod]
         public void ObjectWrapperTest()
         {
+            var multiPropertyEntity = new MultiPropertyTestEntity(true, "foo", 'x', -42, 43, 0.1f, -0.1);
             CloneAndTest(new EntityRegistry()
             {
-                new ObjectWrapper<MultiPropertyTestEntity>(
-                    new MultiPropertyTestEntity(true, "foo", 'x', -42,43, 0.1f, -0.1)
-                ),
+                // ObjectWrapper's value is defined as [SerializeAsValue], so
+                // the MultiPropertyTestEntity will be fully serialized as a value
+                new ObjectWrapper<MultiPropertyTestEntity>(multiPropertyEntity),
                 new ObjectWrapper<MultiPropertyTestEntity>()
             });
         }

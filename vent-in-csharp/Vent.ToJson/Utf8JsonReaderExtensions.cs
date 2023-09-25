@@ -2,9 +2,7 @@
 
 namespace Vent.ToJson
 {
-
-
-    public static class Utf8JsonUtil
+    public static class Utf8JsonReaderExtensions
     {       
         public static object ReadPrimitive(this Utf8JsonReader reader, Type type)
         {

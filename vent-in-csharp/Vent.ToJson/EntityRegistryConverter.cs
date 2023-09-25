@@ -51,9 +51,9 @@ namespace Vent.ToJson
         {
             var registry = new EntityRegistry
             {
-                Id = Utf8JsonUtil.ReadProperty<int>(ref reader, nameof(EntityRegistry.Id)),
-                NextEntityId = Utf8JsonUtil.ReadProperty<int>(ref reader, nameof(EntityRegistry.NextEntityId)),
-                MaxEntitySlots = Utf8JsonUtil.ReadProperty<int>(ref reader, nameof(EntityRegistry.MaxEntitySlots))
+                Id = Utf8JsonReaderExtensions.ReadProperty<int>(ref reader, nameof(EntityRegistry.Id)),
+                NextEntityId = Utf8JsonReaderExtensions.ReadProperty<int>(ref reader, nameof(EntityRegistry.NextEntityId)),
+                MaxEntitySlots = Utf8JsonReaderExtensions.ReadProperty<int>(ref reader, nameof(EntityRegistry.MaxEntitySlots))
             };
 
             ReadEntityInstances(ref reader, registry);
@@ -148,15 +148,12 @@ namespace Vent.ToJson
         {
             reader.ReadAnyToken();
 
-            switch (reader.TokenType)
+            return reader.TokenType switch
             {
-                case JsonTokenType.Null:
-                    return null;
-                case JsonTokenType.StartObject:
-                    return ParseVentObject(ref reader, registry, forwardReferences);
-                default:
-                    throw new NotImplementedException($"Unexpected token {reader.TokenType} encountered");
-            }
+                JsonTokenType.Null => null,
+                JsonTokenType.StartObject => ParseVentObject(ref reader, registry, forwardReferences),
+                _ => throw new NotImplementedException($"Unexpected token {reader.TokenType} encountered"),
+            };
         }
 
         private object ParseVentObject(ref Utf8JsonReader reader,
@@ -238,7 +235,7 @@ namespace Vent.ToJson
             }
             else if (EntityReflection.IsPrimitiveOrString(valueType))
             {
-                return Utf8JsonUtil.ReadPrimitive(reader, valueType);
+                return Utf8JsonReaderExtensions.ReadPrimitive(reader, valueType);
             }
             else if (typeof(IEnumerable).IsAssignableFrom(valueType))
             {
@@ -254,7 +251,6 @@ namespace Vent.ToJson
 
             throw new NotImplementedException($"Cannot parse {valueType} to a value");
         }
-
         
         private IList ParseList(ref Utf8JsonReader reader,
             EntityRegistry registry,
@@ -300,7 +296,7 @@ namespace Vent.ToJson
                     }
                 }
 
-                Utf8JsonUtil.ParseJsonArray(ref reader, ParseEntityListElement);
+                Utf8JsonReaderExtensions.ParseJsonArray(ref reader, ParseEntityListElement);
             }
             else
             {
@@ -314,7 +310,7 @@ namespace Vent.ToJson
                     }
                 }
 
-                Utf8JsonUtil.ParseJsonArray(ref reader, ParseListElement);
+                Utf8JsonReaderExtensions.ParseJsonArray(ref reader, ParseListElement);
             }
 
             return listValue;

@@ -57,7 +57,7 @@ namespace Vent.ToJson.Test
         [TestMethod]
         public void SingleComplexCompoundTypeParseTest()
         {
-            var (node, currentIndex) = VentClassName.ParseGenericArgs("<type<subtype1, subtype2>>");
+            var (node, _) = VentClassName.ParseGenericArgs("<type<subtype1, subtype2>>");
             Assert.IsTrue(node[0].TypeName == "type");
             Assert.IsTrue(node[0].GenericTypeNames[0].TypeName == "subtype1");
             Assert.IsTrue(node[0].GenericTypeNames[1].TypeName == "subtype2");
@@ -66,7 +66,7 @@ namespace Vent.ToJson.Test
         [TestMethod]
         public void MultipleComplexCompoundTypeParseTest()
         {
-            var (node, currentIndex) = VentClassName.ParseGenericArgs("<t1<s1, s2>, t2 < s1, s2 >>");
+            var (node, _) = VentClassName.ParseGenericArgs("<t1<s1, s2>, t2 < s1, s2 >>");
 
             for (var i = 0; i < 2; i++)
             {
