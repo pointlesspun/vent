@@ -1,6 +1,6 @@
-﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+﻿
+/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
 /// (c) Pointlesspun
-
 namespace Vent
 {
     /// <summary>
@@ -28,9 +28,18 @@ namespace Vent
             return this;
         }
 
+       
+
         public override string ToString()
         {
             return $"property: {Value}"; 
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is PropertyEntity<T> entity &&
+                   Id == entity.Id &&
+                   EqualityComparer<T>.Default.Equals(Value, entity.Value);
         }
     }
 }

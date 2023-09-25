@@ -11,8 +11,10 @@ namespace Vent.ToJson
 
             foreach (var assembly in assemblies)
             {
-                foreach (var type in assembly.GetTypes().Where(p =>
-                    p.IsClass && !p.IsAbstract && p.IsPublic && !p.IsInterface))
+                // we need classes which can be used in construction via reflection
+                // only accept public, none static classes. We do accept interfaces because we need 
+                // to be able to generate something like PropertyEntity<IEntity>
+                foreach (var type in assembly.GetTypes().Where(p => p.IsPublic && !(p.IsAbstract && p.IsSealed)))
                 {
                     classLookup[type.ToVentClassName()] = type;
                 }

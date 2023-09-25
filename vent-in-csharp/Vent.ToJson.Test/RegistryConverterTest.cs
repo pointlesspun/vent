@@ -122,6 +122,27 @@ namespace Vent.ToJson.Test
             });
         }
 
+        /// <summary>
+        /// Same as ObjectWrapperTest, but we throw in the original object an ObjectWrapper
+        /// is referring to as well as an object which refers to this original object
+        /// </summary>
+        [TestMethod]
+        public void MixedObjectWrapperTest()
+        {
+            // the original object
+            var multiPropertyEntity = new MultiPropertyTestEntity(true, "foo", 'x', -42, 43, 0.1f, -0.1);
+            CloneAndTest(new EntityRegistry()
+            {
+                multiPropertyEntity,
+                // this will 'copy' multiPropertyEntity as its value property is marked as  
+                // SerializeAsValue
+                new ObjectWrapper<MultiPropertyTestEntity>(multiPropertyEntity),
+                // this will reference multiPropertyEntity as its property is not marked 
+                // as SerializeAsValue
+                new PropertyEntity<IEntity>(multiPropertyEntity)
+            });
+        }
+
         // xxx to test
         // - EntityStore in EntityStore (special case)
         // - Entity with Dictionary
