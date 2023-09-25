@@ -1,7 +1,5 @@
-﻿using Microsoft.Win32;
-using System.Collections;
+﻿using System.Collections;
 using System.Reflection;
-using System.Reflection.PortableExecutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -14,6 +12,7 @@ namespace Vent.ToJson
         private class ForwardReference
         {
             public int EntityId { get; set; }
+
             public object Key { get; set; }
 
             public ForwardReference()
@@ -30,6 +29,10 @@ namespace Vent.ToJson
                 if (target is IList list)
                 {
                     list[(int)Key] = registry[EntityId];
+                }
+                else if (target is IDictionary dictionary)
+                {
+                    dictionary[Key] = registry[EntityId];
                 }
                 else if (Key is PropertyInfo propertyInfo)
                 {
@@ -341,20 +344,34 @@ namespace Vent.ToJson
         }
 
 
+        private static Func<string, object> GetKeyConverter(Type keyType)
+        {
+            if (keyType == typeof(string))
+            {
+                return (str) => str;
+            }
+            else if (keyType.IsPrimitive)
+            {
+                return str => Convert.ChangeType(str, keyType);
+            }
+
+            throw new NotImplementedException($"Cannot convert key from {keyType.Name}");
+        }
+
         private IDictionary ReadDictionary(ref Utf8JsonReader reader,
             EntityRegistry registry,
             Dictionary<object, List<ForwardReference>> references,
             Type type,
             EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {
-            var keyType = type.GetGenericArguments()[0];
+            var keyConverter = GetKeyConverter(type.GetGenericArguments()[0]);
             var valueType = type.GetGenericArguments()[1];
             var dictionary = (IDictionary) Activator.CreateInstance(type);
             List<ForwardReference> objectReferences = null;
 
             while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
             {
-                var key = reader.GetString();
+                var key = keyConverter(reader.GetString());
 
                 reader.ReadAnyToken();
                 {

@@ -1,4 +1,5 @@
-﻿using System.Text.Encodings.Web;
+﻿using System.Collections;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using Vent.PropertyEntities;
 
@@ -163,20 +164,118 @@ namespace Vent.ToJson.Test
             (source, clone) =>
             {
                 AssertRegistriesPropertiesMatch(source, clone);
-                var sourceDict = source[stringDictionary.Id] as ObjectEntity<Dictionary<string, string>>;
-                var cloneDict = clone[stringDictionary.Id] as ObjectEntity<Dictionary<string, string>>;
+                
+                var sourceDict = (source[stringDictionary.Id] as ObjectEntity<Dictionary<string, string>>).Value;
+                var cloneDict = (clone[stringDictionary.Id] as ObjectEntity<Dictionary<string, string>>).Value;
 
-                Assert.IsTrue(cloneDict != sourceDict);
-
-                foreach (var kvp in sourceDict.Value)
-                {
-                    Assert.IsTrue(cloneDict.Value[kvp.Key] == kvp.Value);
-                } 
+                AssertDictionaryValuesMatch(sourceDict, cloneDict);
             });
         }
 
+        [TestMethod]
+        public void IntDictionaryTest()
+        {
+            var intDictionary = new ObjectEntity<Dictionary<int, int>>()
+            {
+                Value = new Dictionary<int, int>()
+                    {
+                        { 1, 2 },
+                        { 3, 4 },
+                        { 5, 6 },
+                    }
+            };
+
+            CloneAndTest(new EntityRegistry()
+            {
+                intDictionary
+            },
+            (source, clone) =>
+            {
+                AssertRegistriesPropertiesMatch(source, clone);
+
+                var sourceDict = (source[0] as ObjectEntity<Dictionary<int, int>>).Value;
+                var cloneDict = (clone[0] as ObjectEntity<Dictionary<int, int>>).Value;
+
+                AssertDictionaryValuesMatch(sourceDict, cloneDict);
+            });
+        }
+
+        [TestMethod]
+        public void EntityDictionaryTest()
+        {
+            var ent1 = new StringEntity("foo");
+            var ent2 = new StringEntity("bar");
+            
+            var entDictionary = new ObjectEntity<Dictionary<string, StringEntity>>()
+            {
+                Value = new Dictionary<string, StringEntity>()
+                {
+                    { "1", ent2 },
+                    { "2", ent1 },
+                }
+            };
+
+            CloneAndTest(new EntityRegistry()
+            {
+                ent1,
+                entDictionary,
+                ent2,
+            },
+            (source, clone) =>
+            {
+                AssertRegistriesPropertiesMatch(source, clone);
+
+                var sourceDict = (source[entDictionary.Id] as ObjectEntity<Dictionary<string, StringEntity>>).Value;
+                var cloneDict = (clone[entDictionary.Id] as ObjectEntity<Dictionary<string, StringEntity>>).Value;
+
+                AssertDictionaryValuesMatch(sourceDict, cloneDict);
+            });
+        }
+
+        [TestMethod]
+        public void EntityDictionaryWithWrapperTest()
+        {
+            var ent1 = new StringEntity("foo");
+            var ent2 = new StringEntity("bar");
+
+            var entDictionary = new ObjectWrapper<Dictionary<string, StringEntity>>()
+            {
+                // ent1 and ent2 are not added to the registry because the objectwrapper
+                // declares the value as SerializeAsValue, so the entities are actually
+                // serialized not referenced
+                Value = new Dictionary<string, StringEntity>()
+                {
+                    { "1", ent2 },
+                    { "2", ent1 },
+                }
+            };
+
+            CloneAndTest(new EntityRegistry()
+            {
+                entDictionary,
+            },
+            (source, clone) =>
+            {
+                AssertRegistriesPropertiesMatch(source, clone);
+
+                var sourceDict = (source[entDictionary.Id] as ObjectEntity<Dictionary<string, StringEntity>>).Value;
+                var cloneDict = (clone[entDictionary.Id] as ObjectEntity<Dictionary<string, StringEntity>>).Value;
+
+                AssertDictionaryValuesMatch(sourceDict, cloneDict);
+            });
+        }
+
+        private void AssertDictionaryValuesMatch(IDictionary d1, IDictionary d2)
+        {
+            Assert.IsTrue(d1 != d2);
+
+            foreach (var key in d1.Keys)
+            {
+                Assert.IsTrue(d1[key].Equals(d2[key]));
+            }
+        }
+
         // xxx to test
-        // - Entity with Dictionary, EntityDictionary and a EntityDictionary marked with SerializeAsValue
         // - Entity with complex object referencing an entity
         // - Entity with complex object using a list 
         // - Entity with complex object using an entity list 

@@ -35,11 +35,11 @@ namespace Vent.ToJson
                 {
                     if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
                     {
-                        WriteVentList(writer, (IList)value);
+                        WriteVentList(writer, (IList)value, entitySerialization);
                     }
                     else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>))
                     {
-                        WriteVentDictionary(writer, (IDictionary)value);
+                        WriteVentDictionary(writer, (IDictionary)value, entitySerialization);
                     }
                 }
                 else
@@ -90,20 +90,9 @@ namespace Vent.ToJson
 
             writer.WriteStartObject();
 
-            Action<object> serializeKey;
-            
-            if (EntityReflection.IsPrimitiveOrString(keyType))
-            {
-                serializeKey = key => writer.WritePropertyName(key.ToString());
-            }
-            else
-            {
-                serializeKey = key => writer.WritePropertyName(((IEntity)key).Id.ToString());
-            }
-
             foreach (DictionaryEntry entry in dictionary)
             {
-                serializeKey(entry.Key);
+                writer.WritePropertyName(entry.Key.ToString());
                 WriteVentValue(writer, entry.Value, entitySerialization);
             }
 
