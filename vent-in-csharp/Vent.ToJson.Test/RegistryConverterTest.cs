@@ -265,6 +265,67 @@ namespace Vent.ToJson.Test
             });
         }
 
+        [TestMethod]
+        public void ListObjectTest()
+        {
+            var ent1 = new StringEntity("foo");
+            var ent2 = new StringEntity("bar");
+
+            CloneAndTest(
+                new EntityRegistry()
+                {
+                    ent1,
+                    new ObjectEntity<List<StringEntity>>()
+                    {
+
+                        Value = new List<StringEntity>()
+                        {
+                            ent2,
+                            ent1,
+                        }
+                    },
+                    ent2
+                },
+                (source, clone) =>
+                {
+                    AssertRegistriesPropertiesMatch(source, clone);
+
+                    var sourceList = (source[1] as ObjectEntity<List<StringEntity>>).Value;
+                    var cloneList = (clone[1] as ObjectEntity<List<StringEntity>>).Value;
+
+                    Assert.IsTrue(sourceList.SequenceEqual(cloneList));
+                }
+            );
+        }
+
+        [TestMethod]
+        public void ListObjectWrapperTest()
+        {
+            CloneAndTest(
+                new EntityRegistry()
+                {
+                    new ObjectWrapper<List<StringEntity>>()
+                    {
+
+                        Value = new List<StringEntity>()
+                        {
+                            new StringEntity("foo"),
+                            new StringEntity("bar"),
+                        }
+                    },
+                },
+                (source, clone) =>
+                {
+                    AssertRegistriesPropertiesMatch(source, clone);
+
+                    var sourceList = (source[0] as ObjectWrapper<List<StringEntity>>).Value;
+                    var cloneList = (clone[0] as ObjectWrapper<List<StringEntity>>).Value;
+
+                    Assert.IsTrue(sourceList.SequenceEqual(cloneList));
+                }
+            );
+        }
+
         private void AssertDictionaryValuesMatch(IDictionary d1, IDictionary d2)
         {
             Assert.IsTrue(d1 != d2);
@@ -276,7 +337,6 @@ namespace Vent.ToJson.Test
         }
 
         // xxx to test
-        // - rewrite to list of readers/writers
         // - Entity with complex object referencing an entity
         // - Entity with complex object using a list 
         // - Entity with complex object using an entity list 
@@ -286,7 +346,8 @@ namespace Vent.ToJson.Test
         {
             var classLookup = ClassLookup
                                 .CreateFrom(typeof(MultiPropertyTestEntity).Assembly, typeof(StringEntity).Assembly)
-                                .WithType(typeof(Dictionary<,>));
+                                .WithType(typeof(Dictionary<,>))
+                                .WithType(typeof(List<>));
 
             var converter = new EntityRegistryConverter(classLookup);
             return new JsonSerializerOptions
@@ -333,8 +394,11 @@ namespace Vent.ToJson.Test
 
             foreach (var kvp in source)
             {
-                Assert.IsTrue(clone[kvp.Key].Equals(source[kvp.Key]));
-                Assert.IsFalse(clone[kvp.Key] == source[kvp.Key]);
+                var clonedEntity = clone[kvp.Key];
+                var sourceEntity = source[kvp.Key];
+
+                Assert.IsTrue(clonedEntity.Equals(sourceEntity));
+                Assert.IsFalse(clonedEntity == sourceEntity);
             }
         }
     }

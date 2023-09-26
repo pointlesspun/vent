@@ -69,7 +69,7 @@ namespace Vent.ToJson
                     while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
                     {
                         var key = int.Parse(reader.GetString());
-                        var entity = reader.ParseNullOrVentObject(context) as IEntity;
+                        var entity = reader.ReadNullOrVentObject(context) as IEntity;
 
                         registry.SetSlot(key, entity);                      
                     }

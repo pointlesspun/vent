@@ -138,24 +138,24 @@ namespace Vent.ToJson
         /// <param name="forwardReferences"></param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
-        public static object ParseNullOrVentObject(this ref Utf8JsonReader reader, JsonReaderContext context)
+        public static object ReadNullOrVentObject(this ref Utf8JsonReader reader, JsonReaderContext context)
         {
             reader.ReadAnyToken();
 
             return reader.TokenType switch
             {
                 JsonTokenType.Null => null,
-                JsonTokenType.StartObject => ParseVentObject(ref reader, context),
+                JsonTokenType.StartObject => ReadVentObject(ref reader, context),
                 _ => throw new NotImplementedException($"Unexpected token {reader.TokenType} encountered"),
             };
         }
 
-        public static object ParseVentObject(ref Utf8JsonReader reader, JsonReaderContext context)
+        public static object ReadVentObject(ref Utf8JsonReader reader, JsonReaderContext context)
         {
             reader.ReadPropertyName(SharedJsonTags.EntityTypeTag);
             {
                 var obj = CreateInstanceFromTypeName(ref reader, context);
-                ParseObjectProperties(ref reader, context, obj);
+                ReadVentObjectProperties(ref reader, context, obj);
                 return obj;
             }
         }
@@ -174,7 +174,7 @@ namespace Vent.ToJson
             }
         }
 
-        public static void ParseObjectProperties(
+        public static void ReadVentObjectProperties(
                 this ref Utf8JsonReader reader,
                 JsonReaderContext context,
                 object obj)
@@ -195,7 +195,7 @@ namespace Vent.ToJson
                 {
                     reader.ReadAnyToken();
                     {
-                        var value = reader.ParseValue(context, info.PropertyType, info.GetEntitySerialization());
+                        var value = reader.ReadVentValue(context, info.PropertyType, info.GetEntitySerialization());
 
                         if (value is ForwardReference reference)
                         {
@@ -217,7 +217,7 @@ namespace Vent.ToJson
         }
 
 
-        public static object ParseValue(
+        public static object ReadVentValue(
             this ref Utf8JsonReader reader,
             JsonReaderContext context,
             Type valueType,
@@ -250,7 +250,7 @@ namespace Vent.ToJson
             }
             else if (reader.TokenType == JsonTokenType.StartObject)
             {
-                return ParseVentObject(ref reader, context);
+                return ReadVentObject(ref reader, context);
             }
 
             throw new NotImplementedException($"Cannot parse {valueType} to a value");
@@ -320,7 +320,7 @@ namespace Vent.ToJson
 
                 if (reader.TokenType != JsonTokenType.EndArray)
                 {
-                    listValue.Add(ParseValue(ref reader, context, listElementType, entitySerialization));
+                    listValue.Add(ReadVentValue(ref reader, context, listElementType, entitySerialization));
                 }
             }
 
@@ -328,7 +328,6 @@ namespace Vent.ToJson
 
             return listValue;
         }
-
 
         public static IDictionary ReadDictionary(this ref Utf8JsonReader reader,
             JsonReaderContext context,
@@ -346,7 +345,7 @@ namespace Vent.ToJson
 
                 reader.ReadAnyToken();
                 {
-                    var value = ParseValue(ref reader, context, valueType, entitySerialization);
+                    var value = ReadVentValue(ref reader, context, valueType, entitySerialization);
 
                     if (value is ForwardReference reference)
                     {
