@@ -276,6 +276,7 @@ namespace Vent.ToJson.Test
         }
 
         // xxx to test
+        // - rewrite to list of readers/writers
         // - Entity with complex object referencing an entity
         // - Entity with complex object using a list 
         // - Entity with complex object using an entity list 

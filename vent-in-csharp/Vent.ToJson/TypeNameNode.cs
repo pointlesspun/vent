@@ -1,9 +1,20 @@
-﻿using System.Text;
-
+﻿
 namespace Vent.ToJson
 {
     public class TypeNameNode
     {
+        public static void ResolveForwardReferences(EntityRegistry registry,
+            Dictionary<object, List<ForwardReference>> forwardReferences)
+        {
+            foreach (var forwardReferenceList in forwardReferences)
+            {
+                foreach (var forwardReference in forwardReferenceList.Value)
+                {
+                    forwardReference.ResolveEntity(registry, forwardReferenceList.Key);
+                }
+            }
+        }
+
         public string TypeName { get; set; }
 
         public List<TypeNameNode> GenericTypeNames { get; set; }
