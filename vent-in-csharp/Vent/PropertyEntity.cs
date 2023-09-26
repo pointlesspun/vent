@@ -41,5 +41,10 @@ namespace Vent
                    Id == entity.Id &&
                    EqualityComparer<T>.Default.Equals(Value, entity.Value);
         }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Id, Value);
+        }
     }
 }

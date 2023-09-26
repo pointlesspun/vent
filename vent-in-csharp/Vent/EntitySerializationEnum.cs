@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace Vent.ToJson
+namespace Vent
 {
     public enum EntitySerialization
     {

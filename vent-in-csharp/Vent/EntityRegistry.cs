@@ -10,6 +10,7 @@ namespace Vent
 
         public static readonly int Unregistered = -1;
 
+        [SerializeAsValue]
         public virtual Dictionary<int, IEntity> EntitySlots
         {
             get => _entities;
@@ -229,6 +230,29 @@ namespace Vent
             }
 
             return result;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj == this
+                || (obj != null
+                && obj is EntityRegistry other
+                && other.Id == Id
+                && other.NextEntityId == NextEntityId
+                && other.MaxEntitySlots == MaxEntitySlots
+                && other._entities.All(kvp =>
+                {
+                    if (_entities.TryGetValue(kvp.Key, out IEntity ent))
+                    {
+                        return (ent == null && kvp.Value == null)
+                            || (ent.Equals(kvp.Value));
+                    }
+
+                    return false;
+                }));
+
+                    
+
         }
     }
 }

@@ -1,9 +1,9 @@
-﻿using System.Reflection;
-
-namespace Vent.ToJson
+﻿
+namespace Vent
 {
+    [AttributeUsage(AttributeTargets.Property)]
     public class SerializeAsValueAttribute : Attribute
     {
     }
-    
+   
 }

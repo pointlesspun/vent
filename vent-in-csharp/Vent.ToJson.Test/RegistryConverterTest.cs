@@ -326,6 +326,24 @@ namespace Vent.ToJson.Test
             );
         }
 
+
+        [TestMethod]
+        public void InnerRegistryTest()
+        {
+            CloneAndTest(
+                new EntityRegistry()
+                {
+                    new StringEntity("outer-foo"),
+                    new EntityRegistry() 
+                    {
+                        new StringEntity("inner-foo"),
+                        new StringEntity("inner-bar"),
+                    },
+                    new StringEntity("outer-bar"),
+                }
+            );
+        }
+
         private void AssertDictionaryValuesMatch(IDictionary d1, IDictionary d2)
         {
             Assert.IsTrue(d1 != d2);
@@ -337,10 +355,6 @@ namespace Vent.ToJson.Test
         }
 
         // xxx to test
-        // - Entity with complex object referencing an entity
-        // - Entity with complex object using a list 
-        // - Entity with complex object using an entity list 
-        // - EntityStore in EntityStore (special case), move entity serialization to vent
         // - Entity History property
         private static JsonSerializerOptions CreateTestOptions()
         {
@@ -390,14 +404,16 @@ namespace Vent.ToJson.Test
 
         private void AssertEqualsButNotCopies(EntityRegistry source, EntityRegistry clone)
         {
-            AssertRegistriesPropertiesMatch(source, clone);
+            Assert.IsTrue(source != null);
+            Assert.IsTrue(clone != null);
+            Assert.IsTrue(clone != source);
+            Assert.IsTrue(source.Equals(clone));    
 
             foreach (var kvp in source)
             {
                 var clonedEntity = clone[kvp.Key];
                 var sourceEntity = source[kvp.Key];
 
-                Assert.IsTrue(clonedEntity.Equals(sourceEntity));
                 Assert.IsFalse(clonedEntity == sourceEntity);
             }
         }
