@@ -2,6 +2,7 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using Vent.PropertyEntities;
+using Vent.ToJson.Test.TestEntities;
 
 namespace Vent.ToJson.Test
 {
@@ -342,6 +343,39 @@ namespace Vent.ToJson.Test
                     new StringEntity("outer-bar"),
                 }
             );
+        }
+
+        [TestMethod]
+        public void CustomSerializableTest()
+        {
+            CloneAndTest(
+                new EntityRegistry()
+                {
+                    new CustomMultiPropertySerializableTestEntity()
+                    {
+                        StringValue = "foo",
+                        IntValue = -42,
+                        UIntValue = 42
+                    }
+                },
+                (source, clone) =>
+                {
+                    AssertRegistriesPropertiesMatch(source, clone);
+
+                    var sourceEnt = source[0] as CustomMultiPropertySerializableTestEntity;
+                    var cloneEnt = clone[0] as CustomMultiPropertySerializableTestEntity;
+
+                    Assert.IsTrue(sourceEnt.StringValue == cloneEnt.StringValue);
+                    Assert.IsTrue(sourceEnt.StringValue == "foo");
+                    Assert.IsTrue(sourceEnt.IntValue == cloneEnt.IntValue);
+                    Assert.IsTrue(sourceEnt.IntValue == -42);
+                    Assert.IsTrue(sourceEnt.UIntValue != cloneEnt.UIntValue);
+                    Assert.IsTrue(sourceEnt.UIntValue == 42);
+                    Assert.IsTrue(cloneEnt.UIntValue == default(uint));
+                    Assert.IsTrue(sourceEnt.BooleanValue == cloneEnt.BooleanValue);
+                    Assert.IsTrue(sourceEnt.CharValue == cloneEnt.CharValue);
+                }
+                );
         }
 
         private void AssertDictionaryValuesMatch(IDictionary d1, IDictionary d2)

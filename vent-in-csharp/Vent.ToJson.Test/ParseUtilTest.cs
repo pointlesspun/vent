@@ -1,4 +1,5 @@
 ﻿using Vent.PropertyEntities;
+using Vent.ToJson.Test.TestEntities;
 
 namespace Vent.ToJson.Test
 {
@@ -83,16 +84,16 @@ namespace Vent.ToJson.Test
         {
             var name = typeof(ObjectWrapper<>).ToVentClassName();
 
-            Assert.IsTrue(name == "Vent.ToJson.Test.ObjectWrapper");
+            Assert.IsTrue(name == "Vent.ToJson.Test.TestEntities.ObjectWrapper");
 
             name = typeof(ObjectWrapper<string>).ToVentClassName();
 
 
-            Assert.IsTrue(name == "Vent.ToJson.Test.ObjectWrapper<System.String>");
+            Assert.IsTrue(name == "Vent.ToJson.Test.TestEntities.ObjectWrapper<System.String>");
 
             name = typeof(ObjectWrapper<ObjectWrapper<string>>).ToVentClassName();
 
-            Assert.IsTrue(name == "Vent.ToJson.Test.ObjectWrapper<Vent.ToJson.Test.ObjectWrapper<System.String>>");
+            Assert.IsTrue(name == "Vent.ToJson.Test.TestEntities.ObjectWrapper<Vent.ToJson.Test.TestEntities.ObjectWrapper<System.String>>");
 
             name = typeof(Dictionary<string, StringEntity>).ToVentClassName();
 
@@ -108,7 +109,7 @@ namespace Vent.ToJson.Test
 
             var name = typeof(ObjectWrapper<string>).ToVentClassName();
 
-            Assert.IsTrue(name == "Vent.ToJson.Test.ObjectWrapper<System.String>");
+            Assert.IsTrue(name == "Vent.ToJson.Test.TestEntities.ObjectWrapper<System.String>");
 
             var node = VentClassName.ParseVentClassName(name);
             var nodeType = node.ResolveType(lookup);
@@ -117,7 +118,7 @@ namespace Vent.ToJson.Test
             
             name = typeof(ObjectWrapper<ObjectWrapper<string>>).ToVentClassName();
 
-            Assert.IsTrue(name == "Vent.ToJson.Test.ObjectWrapper<Vent.ToJson.Test.ObjectWrapper<System.String>>");
+            Assert.IsTrue(name == "Vent.ToJson.Test.TestEntities.ObjectWrapper<Vent.ToJson.Test.TestEntities.ObjectWrapper<System.String>>");
 
             node = VentClassName.ParseVentClassName(name);
             nodeType = node.ResolveType(lookup);

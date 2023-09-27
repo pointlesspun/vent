@@ -1,11 +1,25 @@
 ﻿using System.Collections;
+using System.Runtime.Serialization;
 using System.Text.Json;
 
 namespace Vent.ToJson
 {
     public static class Utf8JsonReaderExtensions
-    {       
-        public static object ReadPrimitive(this Utf8JsonReader reader, Type type)
+    {
+        public static T ReadPrimitiveProperty<T>(this ref Utf8JsonReader reader, string propertyName)
+        {
+            ReadPropertyName(ref reader, propertyName);
+            ReadAnyToken(ref reader);
+            return (T)ParseCurrentTokenAsPrimitive(reader, typeof(T));
+        }
+
+        public static T ReadPrimitive<T>(this ref Utf8JsonReader reader)
+        {
+            ReadAnyToken(ref reader);
+            return (T) ParseCurrentTokenAsPrimitive(reader, typeof(T));
+        }
+
+        public static object ParseCurrentTokenAsPrimitive(Utf8JsonReader reader, Type type)
         {
             switch (Type.GetTypeCode(type))
             {
@@ -48,7 +62,7 @@ namespace Vent.ToJson
                     {
                         if (reader.Read())
                         {
-                            return (T)ReadPrimitive(reader, typeof(T));
+                            return (T)ParseCurrentTokenAsPrimitive(reader, typeof(T));
                         }
                     }
                     else
@@ -85,7 +99,7 @@ namespace Vent.ToJson
         {
             if (!reader.Read())
             {
-                if (reader.IsFinalBlock)
+                if (reader.IsFinalBlock)    
                 {
                     throw new JsonException($"expected more tokens, but encountered the final block.");
                 }
@@ -182,10 +196,29 @@ namespace Vent.ToJson
             Contract.NotNull(context);
             Contract.NotNull(obj);
 
-            var type = obj.GetType();
             List<ForwardReference> objectReferences = null;
 
-            while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
+            if (obj is ICustomJsonSerializable customSerializable)
+            {
+                customSerializable.Read(ref reader, context, objectReferences);
+                // consume the end of object token
+                reader.ReadAnyToken();
+            }
+            else
+            {
+                while (ReadVentObjectProperty(ref reader, context, ref objectReferences, obj)) ;
+            }
+        }
+
+        public static bool ReadVentObjectProperty(
+                this ref Utf8JsonReader reader,
+                JsonReaderContext context,
+                ref List<ForwardReference> objectReferences,
+                object obj)
+        {
+            var type = obj.GetType();
+
+            if (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
             {
                 var propertyName = reader.GetString();
 
@@ -213,11 +246,15 @@ namespace Vent.ToJson
                 {
                     throw new NotImplementedException($"Object of type {type} does not have a property called {propertyName}");
                 }
+
+                return true;
             }
+
+            return false;
         }
 
 
-        public static object ReadVentValue(
+            public static object ReadVentValue(
             this ref Utf8JsonReader reader,
             JsonReaderContext context,
             Type valueType,
@@ -235,7 +272,7 @@ namespace Vent.ToJson
             }
             else if (EntityReflection.IsPrimitiveOrString(valueType))
             {
-                return ReadPrimitive(reader, valueType);
+                return ParseCurrentTokenAsPrimitive(reader, valueType);
             }
             else if (typeof(IEnumerable).IsAssignableFrom(valueType) && valueType.IsGenericType)
             {

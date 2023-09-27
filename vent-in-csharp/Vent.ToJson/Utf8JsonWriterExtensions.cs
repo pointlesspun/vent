@@ -1,5 +1,7 @@
 ﻿using System.Collections;
 using System.Reflection;
+using System.Reflection.PortableExecutable;
+using System.Runtime.Serialization;
 using System.Text.Json;
 
 namespace Vent.ToJson
@@ -118,20 +120,37 @@ namespace Vent.ToJson
 
                 writer.WriteString(SharedJsonTags.EntityTypeTag, obj.GetType().ToVentClassName());
 
-                foreach (PropertyInfo propertyInfo in obj.GetType().GetProperties())
+                if (obj is ICustomJsonSerializable customSerializable)
                 {
-                    if (propertyInfo.CanWrite && propertyInfo.CanRead)
+                    customSerializable.Write(writer);
+                }
+                else
+                {
+                    foreach (PropertyInfo propertyInfo in obj.GetType().GetProperties())
                     {
-                        var value = propertyInfo.GetValue(obj);
-                        var entitySerialization = propertyInfo.GetEntitySerialization();
+                        if (propertyInfo.CanWrite && propertyInfo.CanRead)
+                        {
+                            var value = propertyInfo.GetValue(obj);
+                            var entitySerialization = propertyInfo.GetEntitySerialization();
 
-                        writer.WritePropertyName(propertyInfo.Name);
-                        WriteVentValue(writer, value, entitySerialization);
+                            writer.WritePropertyName(propertyInfo.Name);
+                            WriteVentValue(writer, value, entitySerialization);
+                        }
                     }
                 }
             }
 
             writer.WriteEndObject();
+        }
+
+        public static void WriteProperty(
+            this Utf8JsonWriter writer, 
+            string name, 
+            object value,
+            EntitySerialization entitySerialization = EntitySerialization.AsReference)
+        {
+            writer.WritePropertyName(name);
+            writer.WriteVentValue(value, entitySerialization);
         }
 
         public static void WritePrimitive(this Utf8JsonWriter writer, object value)
