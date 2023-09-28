@@ -29,5 +29,19 @@ namespace Vent.ToJson
             classLookup[type.ToVentClassName()] = type;
             return classLookup;
         }
+
+        public static Dictionary<string, Type> CreateDefault()
+        {
+            var currentAssembly = Assembly.GetExecutingAssembly();
+            var entityAssembly = typeof(IEntity).Assembly;
+
+            var baseLookup = entityAssembly == currentAssembly 
+                            ? CreateFrom(entityAssembly)
+                            : CreateFrom(entityAssembly, currentAssembly);
+
+            return baseLookup
+                    .WithType(typeof(List<>))
+                    .WithType(typeof(Dictionary<,>));
+        }
     }
 }

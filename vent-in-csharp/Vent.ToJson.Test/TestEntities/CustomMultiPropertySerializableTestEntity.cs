@@ -7,9 +7,7 @@ namespace Vent.ToJson.Test.TestEntities
     /// </summary>
     public class CustomMultiPropertySerializableTestEntity : MultiPropertyTestEntity, ICustomJsonSerializable
     {
-        public void Read(ref Utf8JsonReader reader,
-            List<JsonReaderContext> contextStack,
-            List<ForwardReference> objectReferences)
+        public void Read(ref Utf8JsonReader reader, JsonReaderContext _)
         {
             StringValue = reader.ReadPrimitiveProperty<string>(nameof(StringValue));
             IntValue = reader.ReadPrimitiveProperty<int>(nameof(IntValue));

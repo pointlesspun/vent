@@ -56,13 +56,7 @@ namespace Vent.ToJson
 
         private void ReadEntityInstances(ref Utf8JsonReader reader, EntityRegistry registry)
         {
-            var contextStack = new List<JsonReaderContext>() {
-                new JsonReaderContext()
-                {
-                    ClassLookup = _classLookup,
-                    Registry = registry
-                }
-            };
+            var context = new JsonReaderContext(registry, _classLookup);
 
             reader.ReadPropertyName(SharedJsonTags.EntityInstancesTag);
             {
@@ -72,11 +66,15 @@ namespace Vent.ToJson
                     {
                         var key = int.Parse(reader.GetString());
                         reader.ReadAnyToken();
-                        var entity = reader.ReadEntity(contextStack, EntitySerialization.AsValue) as IEntity;
+                        var entity = reader.ReadEntity(context, EntitySerialization.AsValue) as IEntity;
                         registry.SetSlot(key, entity);                      
                     }
 
-                    TypeNameNode.ResolveForwardReferences(contextStack[0].ForwardReferenceLookup);
+                    // are there any references to resolve ?
+                    if (context.Top.ForwardReferenceLookup != null)
+                    {
+                        TypeNameNode.ResolveForwardReferences(context.TopLookup);
+                    }
                 }
                 reader.ReadToken(JsonTokenType.EndObject);
             }

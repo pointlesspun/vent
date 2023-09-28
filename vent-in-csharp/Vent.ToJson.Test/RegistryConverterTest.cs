@@ -420,6 +420,7 @@ namespace Vent.ToJson.Test
         }
 
         // xxx to test
+        // - Entity with reference to Registry
         // - Entity History property
         private static JsonSerializerOptions CreateTestOptions()
         {

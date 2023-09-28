@@ -1,12 +1,48 @@
 ﻿using System.Collections;
-using System.Reflection.PortableExecutable;
-using System.Runtime.Serialization;
 using System.Text.Json;
 
 namespace Vent.ToJson
 {
     public static class Utf8JsonReaderExtensions
     {
+        /// <summary>
+        /// Read an object using the Vent object convention. This convention expects the format to be
+        ///
+        /// "{
+        ///     "__entityType": "className",
+        ///     ... vent compatible properties
+        /// }"
+        /// 
+        /// The "className" needs to be declared in the JsonReaderContext.ClassLookup.
+        /// 
+        /// If this call is succesfull, the reader will be at the token after the closing bracket.
+        /// 
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="contextStack"></param>
+        /// <returns></returns>
+        public static object ReadVentObject(this ref Utf8JsonReader reader, JsonReaderContext context)
+        {
+            // early exit in case of a null
+            if (reader.TokenType == JsonTokenType.Null)
+            {
+                return null;
+            }
+
+            // if there is a start of the object read it
+            if (reader.TokenType == JsonTokenType.StartObject) 
+            {
+                reader.Read();
+            }
+
+            reader.ReadPropertyName(SharedJsonTags.EntityTypeTag);
+            {
+                var obj = CreateInstanceFromTypeName(ref reader, context.ClassLookup);
+                ReadVentObjectProperties(ref reader, context, obj);
+                return obj;
+            }
+        }
+
         public static T ReadPrimitiveProperty<T>(this ref Utf8JsonReader reader, string propertyName)
         {
             ReadPropertyName(ref reader, propertyName);
@@ -155,27 +191,19 @@ namespace Vent.ToJson
         /// <exception cref="NotImplementedException"></exception>
         public static object ReadNullOrVentObject(
             this ref Utf8JsonReader reader
-            , List<JsonReaderContext> contextStack)
+            , JsonReaderContext context)
         {
             reader.ReadAnyToken();
 
             return reader.TokenType switch
             {
                 JsonTokenType.Null => null,
-                JsonTokenType.StartObject => ReadVentObject(ref reader, contextStack),
+                JsonTokenType.StartObject => ReadVentObject(ref reader, context),
                 _ => throw new NotImplementedException($"Unexpected token {reader.TokenType} encountered"),
             };
         }
 
-        public static object ReadVentObject(ref Utf8JsonReader reader, List<JsonReaderContext> contextStack)
-        {
-            reader.ReadPropertyName(SharedJsonTags.EntityTypeTag);
-            {
-                var obj = CreateInstanceFromTypeName(ref reader, contextStack[0].ClassLookup);
-                ReadVentObjectProperties(ref reader, contextStack, obj);
-                return obj;
-            }
-        }
+        
 
         public static object CreateInstanceFromTypeName(ref Utf8JsonReader reader, Dictionary<string, Type> classLookup)
         {
@@ -193,30 +221,27 @@ namespace Vent.ToJson
 
         public static void ReadVentObjectProperties(
                 this ref Utf8JsonReader reader,
-                List<JsonReaderContext> contextStack,
+                JsonReaderContext context,
                 object obj)
         {
-            Contract.NotNull(contextStack);
+            Contract.NotNull(context);
             Contract.NotNull(obj);
-
-            List<ForwardReference> objectReferences = null;
 
             if (obj is ICustomJsonSerializable customSerializable)
             {
-                customSerializable.Read(ref reader, contextStack, objectReferences);
+                customSerializable.Read(ref reader, context);
                 // consume the end of object token
                 reader.ReadAnyToken();
             }
             else
             {
-                while (ReadVentObjectProperty(ref reader, contextStack, ref objectReferences, obj)) ;
+                while (ReadVentObjectProperty(ref reader, context, obj)) ;
             }
         }
 
         public static bool ReadVentObjectProperty(
                 this ref Utf8JsonReader reader,
-                List<JsonReaderContext> contextStack,
-                ref List<ForwardReference> objectReferences,
+                JsonReaderContext context,
                 object obj)
         {
             var type = obj.GetType();
@@ -231,13 +256,12 @@ namespace Vent.ToJson
                 {
                     reader.ReadAnyToken();
                     {
-                        var value = reader.ReadVentValue(contextStack, info.PropertyType, info.GetEntitySerialization());
+                        var value = reader.ReadVentValue(context, info.PropertyType, info.GetEntitySerialization());
 
                         if (value is ForwardReference reference)
                         {
                             reference.Key = info;
-                            objectReferences ??= contextStack[0].AddObjectReferenceList(obj);
-                            objectReferences.Add(reference);
+                            context.Top.AddReference(obj, reference);
                         }
                         else
                         {
@@ -259,7 +283,7 @@ namespace Vent.ToJson
 
         public static object ReadVentValue(
             this ref Utf8JsonReader reader,
-            List<JsonReaderContext> contextStack,
+            JsonReaderContext context,
             Type valueType,
             EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {
@@ -269,7 +293,7 @@ namespace Vent.ToJson
             }
             else if (EntityReflection.IsEntity(valueType))
             {
-                return ReadEntity(ref reader, contextStack, entitySerialization);
+                return ReadEntity(ref reader, context, entitySerialization);
             }
             else if (EntityReflection.IsPrimitiveOrString(valueType))
             {
@@ -279,23 +303,23 @@ namespace Vent.ToJson
             {
                 if (valueType.GetGenericTypeDefinition() == typeof(List<>))
                 {
-                    return ReadList(ref reader, contextStack, valueType, entitySerialization);
+                    return ReadList(ref reader, context, valueType, entitySerialization);
                 }
                 else if (valueType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
                 {
-                    return ReadDictionary(ref reader, contextStack, valueType, entitySerialization);
+                    return ReadDictionary(ref reader, context, valueType, entitySerialization);
                 }
             }
             else if (reader.TokenType == JsonTokenType.StartObject)
             {
-                return ReadVentObject(ref reader, contextStack);
+                return ReadVentObject(ref reader, context);
             }
 
             throw new NotImplementedException($"Cannot parse {valueType} to a value");
         }
 
         public static object ReadEntity(this ref Utf8JsonReader reader,
-            List<JsonReaderContext> contextStack,
+            JsonReaderContext context,
             EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {
             if (reader.TokenType == JsonTokenType.Null)
@@ -307,26 +331,33 @@ namespace Vent.ToJson
             {
                 var key = reader.GetInt32();
 
-                return contextStack[0].Registry.ContainsKey(key)
-                        ? contextStack[0].Registry[key]
-                        : new ForwardReference(contextStack[0].Registry, key);
+                return context.TopRegistry.ContainsKey(key)
+                        ? context.TopRegistry[key]
+                        : new ForwardReference(context.TopRegistry, key);
             }
             else if (reader.TokenType == JsonTokenType.StartObject)
             {
                 reader.ReadPropertyName(SharedJsonTags.EntityTypeTag);
                     
-                var entity = (IEntity) CreateInstanceFromTypeName(ref reader, contextStack[0].ClassLookup);
+                var entity = (IEntity) CreateInstanceFromTypeName(ref reader, context.ClassLookup);
 
                 if (entity is EntityRegistry registry)
                 {
-                    contextStack.Insert(0, new JsonReaderContext(registry, contextStack[0].ClassLookup));
-                    ReadVentObjectProperties(ref reader, contextStack, entity);
-                    TypeNameNode.ResolveForwardReferences(contextStack[0].ForwardReferenceLookup);
-                    contextStack.RemoveAt(0);
+                    context.Push(registry);
+                    
+                    ReadVentObjectProperties(ref reader, context, entity);
+
+                    // are there any references to resolve ?
+                    if (context.Top.ForwardReferenceLookup != null)
+                    {
+                        TypeNameNode.ResolveForwardReferences(context.TopLookup);
+                    }
+
+                    context.Pop();
                 }
                 else
                 {
-                    ReadVentObjectProperties(ref reader, contextStack, entity);
+                    ReadVentObjectProperties(ref reader, context, entity);
                 }
 
                 return entity;
@@ -336,7 +367,7 @@ namespace Vent.ToJson
         }
 
         public static IList ReadList(this ref Utf8JsonReader reader,
-            List<JsonReaderContext> contextStack,
+            JsonReaderContext context,
             Type type,
             EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {
@@ -345,19 +376,18 @@ namespace Vent.ToJson
 
             if (typeof(IEntity).IsAssignableFrom(elementType) && entitySerialization == EntitySerialization.AsReference)
             {
-                return ReadEntityList(ref reader, contextStack, listType);
+                return ReadEntityList(ref reader, context, listType);
             }
             else
             {
-                return ReadValueList(ref reader, contextStack, listType, elementType, entitySerialization);
+                return ReadValueList(ref reader, context, listType, elementType, entitySerialization);
             }
         }
 
         public static IList ReadEntityList(this ref Utf8JsonReader reader,
-            List<JsonReaderContext> contextStack,
+            JsonReaderContext context,
             Type listType)
         {
-            List<ForwardReference> listEntityReferences = null;
             var listValue = (IList)Activator.CreateInstance(listType);
 
             void ParseEntityListElement(ref Utf8JsonReader reader)
@@ -366,16 +396,18 @@ namespace Vent.ToJson
 
                 if (reader.TokenType != JsonTokenType.EndArray)
                 {
+                    // xxx test if entity points to -1
                     var entityId = reader.GetInt32();
-                    if (contextStack[0].Registry.ContainsKey(entityId))
+                    if (context.TopRegistry.ContainsKey(entityId))
                     {
-                        listValue.Add(contextStack[0].Registry[entityId]);
+                        listValue.Add(context.TopRegistry[entityId]);
                     }
                     else
                     {
-                        listEntityReferences ??= contextStack[0].AddObjectReferenceList(listValue);
-                        listEntityReferences.Add(new ForwardReference(contextStack[0].Registry, entityId, listValue.Count));
-
+                        context.Top.AddReference(listValue,
+                            new ForwardReference(context.TopRegistry, entityId, listValue.Count));
+                        // add a null value, this will be replaced when the forward references are
+                        // resolved with the actual entity
                         listValue.Add(null);
                     }
                 }
@@ -387,7 +419,7 @@ namespace Vent.ToJson
         }
 
         public static IList ReadValueList(this ref Utf8JsonReader reader,
-         List<JsonReaderContext> contextStack,
+         JsonReaderContext context,
          Type listType, Type listElementType,
          EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {
@@ -399,7 +431,7 @@ namespace Vent.ToJson
 
                 if (reader.TokenType != JsonTokenType.EndArray)
                 {
-                    listValue.Add(ReadVentValue(ref reader, contextStack, listElementType, entitySerialization));
+                    listValue.Add(ReadVentValue(ref reader, context, listElementType, entitySerialization));
                 }
             }
 
@@ -409,14 +441,13 @@ namespace Vent.ToJson
         }
 
         public static IDictionary ReadDictionary(this ref Utf8JsonReader reader,
-            List<JsonReaderContext> contextStack,
+            JsonReaderContext context,
             Type type,
             EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {
             var keyConverter = GetKeyConverter(type.GetGenericArguments()[0]);
             var valueType = type.GetGenericArguments()[1];
             var dictionary = (IDictionary)Activator.CreateInstance(type);
-            List<ForwardReference> objectReferences = null;
 
             while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
             {
@@ -424,13 +455,12 @@ namespace Vent.ToJson
 
                 reader.ReadAnyToken();
                 {
-                    var value = ReadVentValue(ref reader, contextStack, valueType, entitySerialization);
+                    var value = ReadVentValue(ref reader, context, valueType, entitySerialization);
 
                     if (value is ForwardReference reference)
                     {
                         reference.Key = key;
-                        objectReferences ??= contextStack[0].AddObjectReferenceList(dictionary);
-                        objectReferences.Add(reference);
+                        context.Top.AddReference(dictionary, reference);
                     }
                     else
                     {

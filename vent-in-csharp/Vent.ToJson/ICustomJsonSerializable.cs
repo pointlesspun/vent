@@ -6,8 +6,6 @@ namespace Vent.ToJson
     {
         void Write(Utf8JsonWriter writer);
 
-        void Read(ref Utf8JsonReader reader, 
-            List<JsonReaderContext> contextStack, 
-            List<ForwardReference> objectReferences);
+        void Read(ref Utf8JsonReader reader, JsonReaderContext context);
     }
 }
