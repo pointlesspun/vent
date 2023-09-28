@@ -18,15 +18,24 @@
         {
             if (obj == this) return true;
 
-            return obj != null
-                && obj is EntityPropertyEntity other
-                && (other.Other == null && Other == null
-                    || other.Other.Id == Other.Id);
+            if (obj != null && obj is EntityPropertyEntity otherProperty)
+            {
+                return otherProperty.Other == null && Other == null
+                     || (otherProperty.Other.Id == Other.Id
+                             && otherProperty.Other.Equals(Other));
+            }
+
+            return false;
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Id, Other);
+            return base.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return Other == null ? "-> null" : $"-> @{Other.Id}: {Other}";
         }
     }
 }

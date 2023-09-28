@@ -3,14 +3,14 @@ namespace Vent.ToJson
 {
     public class TypeNameNode
     {
-        public static void ResolveForwardReferences(EntityRegistry registry,
+        public static void ResolveForwardReferences(
             Dictionary<object, List<ForwardReference>> forwardReferences)
         {
             foreach (var forwardReferenceList in forwardReferences)
             {
                 foreach (var forwardReference in forwardReferenceList.Value)
                 {
-                    forwardReference.ResolveEntity(registry, forwardReferenceList.Key);
+                    forwardReference.ResolveEntity(forwardReferenceList.Key);
                 }
             }
         }

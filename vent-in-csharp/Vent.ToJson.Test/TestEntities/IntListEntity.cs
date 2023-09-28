@@ -29,7 +29,7 @@
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Id, IntList);
+            return base.GetHashCode();
         }
     }
 

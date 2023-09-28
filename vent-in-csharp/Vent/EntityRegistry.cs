@@ -242,10 +242,12 @@ namespace Vent
                 && other.MaxEntitySlots == MaxEntitySlots
                 && other._entities.All(kvp =>
                 {
-                    if (_entities.TryGetValue(kvp.Key, out IEntity ent))
+                    if (_entities.TryGetValue(kvp.Key, out IEntity thisEntity))
                     {
-                        return (ent == null && kvp.Value == null)
-                            || (ent.Equals(kvp.Value));
+                        var otherEntity = kvp.Value;
+                        
+                        return (thisEntity == null && otherEntity == null)
+                            || (thisEntity.Equals(otherEntity));
                     }
 
                     return false;

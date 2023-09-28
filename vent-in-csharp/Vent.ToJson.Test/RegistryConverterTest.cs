@@ -327,7 +327,10 @@ namespace Vent.ToJson.Test
             );
         }
 
-
+        /// <summary>
+        /// Add a registry to a registry. The inner registry should have instances
+        /// of its own entities. 
+        /// </summary>
         [TestMethod]
         public void InnerRegistryTest()
         {
@@ -335,7 +338,7 @@ namespace Vent.ToJson.Test
                 new EntityRegistry()
                 {
                     new StringEntity("outer-foo"),
-                    new EntityRegistry() 
+                    new EntityRegistry()
                     {
                         new StringEntity("inner-foo"),
                         new StringEntity("inner-bar"),
@@ -344,6 +347,34 @@ namespace Vent.ToJson.Test
                 }
             );
         }
+        
+        [TestMethod]
+        public void InnerOuterReferenceRegistryTest()
+        {
+            var innerFoo = new StringEntity("inner-foo");
+            var innerBar = new StringEntity("inner-bar");
+            var innerFooReference = new EntityPropertyEntity(innerFoo);
+            var innerBarReference = new EntityPropertyEntity(innerBar);
+
+            var innerRegistry = new EntityRegistry()
+            {
+                innerBarReference,
+                innerFoo,
+                innerBar,
+                innerFooReference,
+            };
+
+            CloneAndTest(
+                new EntityRegistry()
+                {
+                    new StringEntity("outer-foo"),
+                    innerRegistry,
+                    new StringEntity("outer-bar"),
+                }
+            );
+        }
+
+        
 
         [TestMethod]
         public void CustomSerializableTest()

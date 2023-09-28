@@ -53,7 +53,7 @@
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Id, BooleanValue, StringValue, CharValue, IntValue, UIntValue, FloatValue, DoubleValue);
+            return base.GetHashCode();
         }
     }
 

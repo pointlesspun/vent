@@ -28,7 +28,7 @@
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Id, EntityList);
+            return base.GetHashCode();
         }
     }
 

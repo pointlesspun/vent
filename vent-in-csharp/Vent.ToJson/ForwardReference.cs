@@ -5,6 +5,8 @@ namespace Vent.ToJson
 {
     public class ForwardReference
     {
+        public EntityRegistry Registry { get; set; }
+
         public int EntityId { get; set; }
 
         public object Key { get; set; }
@@ -13,30 +15,32 @@ namespace Vent.ToJson
         {
         }
 
-        public ForwardReference(int entityKey)
+        public ForwardReference(EntityRegistry registry, int entityKey)
         {
+            Registry = registry;
             EntityId  = entityKey;
         }
 
-        public ForwardReference(int entityKey, object key)
+        public ForwardReference(EntityRegistry registry, int entityKey, object key)
         {
+            Registry = registry;
             EntityId = entityKey;
             Key = key;
         }
 
-        public void ResolveEntity(EntityRegistry registry, object target)
+        public void ResolveEntity(object target)
         {
             if (target is IList list)
             {
-                list[(int)Key] = registry[EntityId];
+                list[(int)Key] = Registry[EntityId];
             }
             else if (target is IDictionary dictionary)
             {
-                dictionary[Key] = registry[EntityId];
+                dictionary[Key] = Registry[EntityId];
             }
             else if (Key is PropertyInfo propertyInfo)
             {
-                propertyInfo.SetValue(target, registry[EntityId]);
+                propertyInfo.SetValue(target, Registry[EntityId]);
             }
         }
     }

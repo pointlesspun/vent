@@ -14,9 +14,16 @@ namespace Vent.ToJson
 
         public Dictionary<object, List<ForwardReference>> ForwardReferenceLookup { get; set; }  
             = new Dictionary<object, List<ForwardReference>>();
+        
         public JsonReaderContext() { }
 
-        public List<ForwardReference> AddReferenceList(object target)
+        public JsonReaderContext(EntityRegistry registry, Dictionary<string, Type> classLookup) 
+        {
+            Registry = registry;
+            ClassLookup = classLookup;
+        }
+
+        public List<ForwardReference> AddObjectReferenceList(object target)
         {
             var list = new List<ForwardReference>();
             ForwardReferenceLookup.Add(target, list);
