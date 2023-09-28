@@ -5,6 +5,82 @@ namespace Vent.ToJson
 {
     public static class Utf8JsonReaderExtensions
     {
+        public static T ReadVentValue<T>(this ref Utf8JsonReader reader,
+            JsonReaderContext context = null,
+            EntitySerialization entitySerialization = EntitySerialization.AsReference)
+        {
+            
+            return (T) ReadVentValue(ref reader, typeof(T), context, entitySerialization);  
+        }
+
+        /// <summary>
+        /// Read a value supported by Vent.ToJson, this includes: primitives, strings, arrays (todo),
+        /// lists, dictionaries, entities and objects. Any object outside this set will cause
+        /// an exception to be thrown. The reader is expected to contain valid json or the reader
+        /// will throw an exception.
+        /// 
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="valueType"></param>
+        /// <param name="context"></param>
+        /// <param name="entitySerialization"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static object ReadVentValue(
+            this ref Utf8JsonReader reader,
+            Type valueType,
+            JsonReaderContext context = null,
+            EntitySerialization entitySerialization = EntitySerialization.AsReference)
+        {
+            // create a new context if none was provided
+            context ??= new JsonReaderContext(new EntityRegistry(), ClassLookup.CreateDefault());
+
+            // xxx todo add array
+            if (reader.TokenType == JsonTokenType.None)
+            {
+                reader.ReadAnyToken();
+            }
+
+            if (reader.TokenType == JsonTokenType.Null || reader.TokenType == JsonTokenType.None)
+            {
+                return null;
+            }
+            else if (EntityReflection.IsEntity(valueType))
+            {
+                return ReadEntity(ref reader, context, entitySerialization);
+            }
+            else if (EntityReflection.IsPrimitiveOrString(valueType))
+            {
+                return ReadPrimitive(reader, valueType);
+            }
+            else if (valueType.IsArray)
+            {
+                // xxx to do
+            }
+            else if (valueType == typeof(DateTime))
+            {
+                return DateTime.Parse(reader.GetString());
+            }
+            else if (typeof(IEnumerable).IsAssignableFrom(valueType) && valueType.IsGenericType)
+            {
+                if (valueType.GetGenericTypeDefinition() == typeof(List<>))
+                {
+                    return ReadList(ref reader, context, valueType, entitySerialization);
+                }
+                else if (valueType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
+                {
+                    return ReadDictionary(ref reader, context, valueType, entitySerialization);
+                }
+            }
+            else if (reader.TokenType == JsonTokenType.StartObject)
+            {
+                return ReadVentObject(ref reader, context);
+            }
+
+            throw new NotImplementedException($"Cannot parse {valueType} to a value");
+        }
+
+
         /// <summary>
         /// Read an object using the Vent object convention. This convention expects the format to be
         ///
@@ -47,16 +123,16 @@ namespace Vent.ToJson
         {
             ReadPropertyName(ref reader, propertyName);
             ReadAnyToken(ref reader);
-            return (T)ParseCurrentTokenAsPrimitive(reader, typeof(T));
+            return (T)ReadPrimitive(reader, typeof(T));
         }
 
         public static T ReadPrimitive<T>(this ref Utf8JsonReader reader)
         {
             ReadAnyToken(ref reader);
-            return (T) ParseCurrentTokenAsPrimitive(reader, typeof(T));
+            return (T) ReadPrimitive(reader, typeof(T));
         }
 
-        public static object ParseCurrentTokenAsPrimitive(Utf8JsonReader reader, Type type)
+        public static object ReadPrimitive(Utf8JsonReader reader, Type type)
         {
             switch (Type.GetTypeCode(type))
             {
@@ -99,7 +175,7 @@ namespace Vent.ToJson
                     {
                         if (reader.Read())
                         {
-                            return (T)ParseCurrentTokenAsPrimitive(reader, typeof(T));
+                            return (T)ReadPrimitive(reader, typeof(T));
                         }
                     }
                     else
@@ -256,7 +332,7 @@ namespace Vent.ToJson
                 {
                     reader.ReadAnyToken();
                     {
-                        var value = reader.ReadVentValue(context, info.PropertyType, info.GetEntitySerialization());
+                        var value = reader.ReadVentValue(info.PropertyType, context, info.GetEntitySerialization());
 
                         if (value is ForwardReference reference)
                         {
@@ -281,42 +357,7 @@ namespace Vent.ToJson
         }
 
 
-        public static object ReadVentValue(
-            this ref Utf8JsonReader reader,
-            JsonReaderContext context,
-            Type valueType,
-            EntitySerialization entitySerialization = EntitySerialization.AsReference)
-        {
-            if (reader.TokenType == JsonTokenType.Null)
-            {
-                return null;
-            }
-            else if (EntityReflection.IsEntity(valueType))
-            {
-                return ReadEntity(ref reader, context, entitySerialization);
-            }
-            else if (EntityReflection.IsPrimitiveOrString(valueType))
-            {
-                return ParseCurrentTokenAsPrimitive(reader, valueType);
-            }
-            else if (typeof(IEnumerable).IsAssignableFrom(valueType) && valueType.IsGenericType)
-            {
-                if (valueType.GetGenericTypeDefinition() == typeof(List<>))
-                {
-                    return ReadList(ref reader, context, valueType, entitySerialization);
-                }
-                else if (valueType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
-                {
-                    return ReadDictionary(ref reader, context, valueType, entitySerialization);
-                }
-            }
-            else if (reader.TokenType == JsonTokenType.StartObject)
-            {
-                return ReadVentObject(ref reader, context);
-            }
-
-            throw new NotImplementedException($"Cannot parse {valueType} to a value");
-        }
+        
 
         public static object ReadEntity(this ref Utf8JsonReader reader,
             JsonReaderContext context,
@@ -431,7 +472,7 @@ namespace Vent.ToJson
 
                 if (reader.TokenType != JsonTokenType.EndArray)
                 {
-                    listValue.Add(ReadVentValue(ref reader, context, listElementType, entitySerialization));
+                    listValue.Add(ReadVentValue(ref reader, listElementType, context, entitySerialization));
                 }
             }
 
@@ -455,7 +496,7 @@ namespace Vent.ToJson
 
                 reader.ReadAnyToken();
                 {
-                    var value = ReadVentValue(ref reader, context, valueType, entitySerialization);
+                    var value = ReadVentValue(ref reader, valueType, context, entitySerialization);
 
                     if (value is ForwardReference reference)
                     {
