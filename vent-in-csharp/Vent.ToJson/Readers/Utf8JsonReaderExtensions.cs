@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Text.Json;
 
-namespace Vent.ToJson
+namespace Vent.ToJson.Readers
 {
     public static class Utf8JsonReaderExtensions
     {
@@ -10,7 +10,6 @@ namespace Vent.ToJson
             JsonReaderContext context = null,
             EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {
-            
             return (T) ReadVentValue(ref reader, typeof(T), context, entitySerialization);  
         }
 
@@ -68,7 +67,7 @@ namespace Vent.ToJson
             {
                 if (valueType.GetGenericTypeDefinition() == typeof(List<>))
                 {
-                    return ReadList(ref reader, context, valueType.GetGenericArguments()[0], entitySerialization);
+                    return reader.ReadList(context, valueType.GetGenericArguments()[0], entitySerialization);
                 }
                 else if (valueType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
                 {
@@ -89,7 +88,7 @@ namespace Vent.ToJson
             EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {
             var elementType = valueType.GetElementType();
-            var list = ReadList(ref reader, context, elementType, entitySerialization);
+            var list = reader.ReadList(context, elementType, entitySerialization);
             var array = Array.CreateInstance(elementType, list.Count);
 
             list.CopyTo(array, 0);
@@ -233,20 +232,6 @@ namespace Vent.ToJson
 
         public delegate void JsonArrayReader(ref Utf8JsonReader reader);
 
-        public static void ParseJsonArray(ref Utf8JsonReader reader, JsonArrayReader arrayElementHandler)
-        {
-            if (reader.TokenType == JsonTokenType.StartArray)
-            {
-                while (reader.TokenType != JsonTokenType.EndArray)
-                {
-                    arrayElementHandler(ref reader);
-                }
-            }
-            else
-            {
-                throw new JsonException($"expected JsonTokenType.StartArray but found {reader.TokenType}.");
-            }
-        }
 
         public static void ReadAnyToken(this ref Utf8JsonReader reader)
         {
@@ -418,78 +403,7 @@ namespace Vent.ToJson
             throw new NotImplementedException($"Cannot parse {reader.TokenType} to an serialization of an entity");
         }
 
-        public static IList ReadList(this ref Utf8JsonReader reader,
-            JsonReaderContext context,
-            Type listElementType,
-            EntitySerialization entitySerialization = EntitySerialization.AsReference)
-        {
-            var listType = typeof(List<>).MakeGenericType(listElementType);
-
-            if (typeof(IEntity).IsAssignableFrom(listElementType) && entitySerialization == EntitySerialization.AsReference)
-            {
-                return ReadEntityList(ref reader, context, listType);
-            }
-            else
-            {
-                return ReadValueList(ref reader, context, listType, listElementType, entitySerialization);
-            }
-        }
-
-        public static IList ReadEntityList(this ref Utf8JsonReader reader,
-            JsonReaderContext context,
-            Type listType)
-        {
-            var listValue = (IList)Activator.CreateInstance(listType);
-
-            void ParseEntityListElement(ref Utf8JsonReader reader)
-            {
-                reader.ReadAnyToken();
-
-                if (reader.TokenType != JsonTokenType.EndArray)
-                {
-                    // xxx test if entity points to -1
-                    var entityId = reader.GetInt32();
-                    if (context.TopRegistry.ContainsKey(entityId))
-                    {
-                        listValue.Add(context.TopRegistry[entityId]);
-                    }
-                    else
-                    {
-                        context.Top.AddReference(listValue,
-                            new ForwardReference(context.TopRegistry, entityId, listValue.Count));
-                        // add a null value, this will be replaced when the forward references are
-                        // resolved with the actual entity
-                        listValue.Add(null);
-                    }
-                }
-            }
-
-            ParseJsonArray(ref reader, ParseEntityListElement);
-            
-            return listValue;
-        }
-
-        public static IList ReadValueList(this ref Utf8JsonReader reader,
-         JsonReaderContext context,
-         Type listType, Type listElementType,
-         EntitySerialization entitySerialization = EntitySerialization.AsReference)
-        {
-            var listValue = (IList)Activator.CreateInstance(listType);
-
-            void ParseListElement(ref Utf8JsonReader reader)
-            {
-                reader.ReadAnyToken();
-
-                if (reader.TokenType != JsonTokenType.EndArray)
-                {
-                    listValue.Add(ReadVentValue(ref reader, listElementType, context, entitySerialization));
-                }
-            }
-
-            ParseJsonArray(ref reader, ParseListElement);
-
-            return listValue;
-        }
+        
 
         public static IDictionary ReadDictionary(this ref Utf8JsonReader reader,
             JsonReaderContext context,
