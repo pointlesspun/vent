@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Text.Json;
 
 namespace Vent.ToJson
@@ -20,11 +21,13 @@ namespace Vent.ToJson
         /// will throw an exception.
         /// 
         /// </summary>
-        /// <param name="reader"></param>
-        /// <param name="valueType"></param>
-        /// <param name="context"></param>
-        /// <param name="entitySerialization"></param>
-        /// <returns></returns>
+        /// <param name="reader">Json reader containing valid data</param>
+        /// <param name="valueType">Type to convert to</param>
+        /// <param name="context">Context holding the current registry and class lookup</param>
+        /// <param name="entitySerialization">If set to 'AsReference' entities will be read as references
+        /// and resolved against the current registry. If set to 'AsValue' the entity will be created
+        /// from the current parameters.</param>
+        /// <returns>The parsed object or null if the current reader value is null</returns>
         /// <exception cref="NotImplementedException"></exception>
         public static object ReadVentValue(
             this ref Utf8JsonReader reader,
@@ -55,17 +58,17 @@ namespace Vent.ToJson
             }
             else if (valueType.IsArray)
             {
-                // xxx to do
+                return ReadArray(ref reader, context, valueType, entitySerialization);
             }
             else if (valueType == typeof(DateTime))
             {
-                return ParseDateTime(ref reader);
+                return ReadDateTime(ref reader);
             }
             else if (typeof(IEnumerable).IsAssignableFrom(valueType) && valueType.IsGenericType)
             {
                 if (valueType.GetGenericTypeDefinition() == typeof(List<>))
                 {
-                    return ReadList(ref reader, context, valueType, entitySerialization);
+                    return ReadList(ref reader, context, valueType.GetGenericArguments()[0], entitySerialization);
                 }
                 else if (valueType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
                 {
@@ -80,15 +83,41 @@ namespace Vent.ToJson
             throw new NotImplementedException($"Cannot parse {valueType} to a value");
         }
 
-        public static DateTime ParseDateTime(this ref Utf8JsonReader reader)
+        public static Array ReadArray(this ref Utf8JsonReader reader, 
+            JsonReaderContext context,
+            Type valueType,
+            EntitySerialization entitySerialization = EntitySerialization.AsReference)
+        {
+            var elementType = valueType.GetElementType();
+            var list = ReadList(ref reader, context, elementType, entitySerialization);
+            var array = Array.CreateInstance(elementType, list.Count);
+
+            list.CopyTo(array, 0);
+            return array;
+        }
+
+        /// <summary>
+        /// Read the date time from the current token in the reader. If the token
+        /// is a number, it will be assumed to represent ticks and the date time
+        /// returned will be based on these ticks. Otherwise DateTime.Parse
+        /// will be used.
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <returns></returns>
+        public static DateTime ReadDateTime(this ref Utf8JsonReader reader)
         {
             if (reader.TokenType == JsonTokenType.Number)
             {
                 // parse the datetime as if it were ticks
                 return new DateTime(reader.GetInt64());
             }
-            
-            return DateTime.Parse(reader.GetString());
+            else if (reader.TokenType == JsonTokenType.String)
+            {
+                return DateTime.Parse(reader.GetString());
+            }
+            // xxx test
+
+            throw new JsonException($"JsonReader can't covert {reader.TokenType} to a DateTime.");
         }
 
         /// <summary>
@@ -391,19 +420,18 @@ namespace Vent.ToJson
 
         public static IList ReadList(this ref Utf8JsonReader reader,
             JsonReaderContext context,
-            Type type,
+            Type listElementType,
             EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {
-            var elementType = type.GetGenericArguments()[0];
-            var listType = typeof(List<>).MakeGenericType(elementType);
+            var listType = typeof(List<>).MakeGenericType(listElementType);
 
-            if (typeof(IEntity).IsAssignableFrom(elementType) && entitySerialization == EntitySerialization.AsReference)
+            if (typeof(IEntity).IsAssignableFrom(listElementType) && entitySerialization == EntitySerialization.AsReference)
             {
                 return ReadEntityList(ref reader, context, listType);
             }
             else
             {
-                return ReadValueList(ref reader, context, listType, elementType, entitySerialization);
+                return ReadValueList(ref reader, context, listType, listElementType, entitySerialization);
             }
         }
 

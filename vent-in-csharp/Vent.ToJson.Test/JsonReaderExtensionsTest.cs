@@ -47,6 +47,16 @@ namespace Vent.ToJson.Test
 
             Assert.AreEqual(ticksOutput, dateTimeNow);
         }
+
+        [TestMethod]
+        public void ReadArrayTest()
+        {           
+            var arrayString = $"[1, 2, 3]";
+            var arrayReader = new Utf8JsonReader(Encoding.UTF8.GetBytes(arrayString));
+            var arrayOutput = arrayReader.ReadVentValue<int[]>();
+
+            Assert.IsTrue(arrayOutput.SequenceEqual(new int[] { 1, 2, 3 }));
+        }
     }
 }
 
