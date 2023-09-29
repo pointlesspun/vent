@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Microsoft.Win32;
+using System.Collections;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -19,65 +20,15 @@ namespace Vent.ToJson
                 
         public override EntityRegistry Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            var registry = new EntityRegistry
+            return (EntityRegistry) reader.ReadEntity(new JsonReaderContext()
             {
-                Id = Utf8JsonReaderExtensions.ReadProperty<int>(ref reader, nameof(EntityRegistry.Id)),
-                NextEntityId = Utf8JsonReaderExtensions.ReadProperty<int>(ref reader, nameof(EntityRegistry.NextEntityId)),
-                MaxEntitySlots = Utf8JsonReaderExtensions.ReadProperty<int>(ref reader, nameof(EntityRegistry.MaxEntitySlots))
-            };
-
-            ReadEntityInstances(ref reader, registry);
-            return registry;
-       }
+                ClassLookup = _classLookup
+            }, EntitySerialization.AsValue);
+        }
     
         public override void Write(Utf8JsonWriter writer, EntityRegistry registry, JsonSerializerOptions options)
         {
-            writer.WriteStartObject();
-
-            writer.WriteNumber(nameof(EntityRegistry.Id), registry.Id);
-            writer.WriteNumber(nameof(EntityRegistry.NextEntityId), registry.NextEntityId);
-            writer.WriteNumber(nameof(EntityRegistry.MaxEntitySlots), registry.MaxEntitySlots);
-
-            writer.WritePropertyName(SharedJsonTags.EntityInstancesTag);
-            {
-                writer.WriteStartObject();
-                {
-                    foreach (KeyValuePair<int, IEntity> kvp in registry)
-                    {
-                        writer.WritePropertyName(kvp.Key.ToString());
-                        writer.WriteVentObject(kvp.Value);
-                    }
-                }
-                writer.WriteEndObject();
-            }
-            writer.WriteEndObject();
+            writer.WriteVentObject(registry);
         }
-                
-
-        private void ReadEntityInstances(ref Utf8JsonReader reader, EntityRegistry registry)
-        {
-            var context = new JsonReaderContext(registry, _classLookup);
-
-            reader.ReadPropertyName(SharedJsonTags.EntityInstancesTag);
-            {
-                reader.ReadToken(JsonTokenType.StartObject);
-                {                   
-                    while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
-                    {
-                        var key = int.Parse(reader.GetString());
-                        reader.ReadAnyToken();
-                        var entity = reader.ReadEntity(context, EntitySerialization.AsValue) as IEntity;
-                        registry.SetSlot(key, entity);                      
-                    }
-
-                    // are there any references to resolve ?
-                    if (context.Top.ForwardReferenceLookup != null)
-                    {
-                        TypeNameNode.ResolveForwardReferences(context.TopLookup);
-                    }
-                }
-                reader.ReadToken(JsonTokenType.EndObject);
-            }
-        }       
     }
 }

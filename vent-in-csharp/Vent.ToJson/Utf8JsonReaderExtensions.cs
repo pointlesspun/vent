@@ -59,7 +59,7 @@ namespace Vent.ToJson
             }
             else if (valueType == typeof(DateTime))
             {
-                return DateTime.Parse(reader.GetString());
+                return ParseDateTime(ref reader);
             }
             else if (typeof(IEnumerable).IsAssignableFrom(valueType) && valueType.IsGenericType)
             {
@@ -80,6 +80,16 @@ namespace Vent.ToJson
             throw new NotImplementedException($"Cannot parse {valueType} to a value");
         }
 
+        public static DateTime ParseDateTime(this ref Utf8JsonReader reader)
+        {
+            if (reader.TokenType == JsonTokenType.Number)
+            {
+                // parse the datetime as if it were ticks
+                return new DateTime(reader.GetInt64());
+            }
+            
+            return DateTime.Parse(reader.GetString());
+        }
 
         /// <summary>
         /// Read an object using the Vent object convention. This convention expects the format to be
@@ -208,6 +218,7 @@ namespace Vent.ToJson
                 throw new JsonException($"expected JsonTokenType.StartArray but found {reader.TokenType}.");
             }
         }
+
         public static void ReadAnyToken(this ref Utf8JsonReader reader)
         {
             if (!reader.Read())
@@ -254,32 +265,6 @@ namespace Vent.ToJson
                 }
             }
         }
-
-        /// <summary>
-        /// Creates an object from json based assuming a vent specific convention, ie:
-        ///  * Expects the next token in the reader to be null or a start object. If null is found null will be returned.
-        ///  * If the token is a start object, ParseVentObjectProperties is called
-        /// </summary>
-        /// <param name="reader"></param>
-        /// <param name="registry"></param>
-        /// <param name="forwardReferences"></param>
-        /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
-        public static object ReadNullOrVentObject(
-            this ref Utf8JsonReader reader
-            , JsonReaderContext context)
-        {
-            reader.ReadAnyToken();
-
-            return reader.TokenType switch
-            {
-                JsonTokenType.Null => null,
-                JsonTokenType.StartObject => ReadVentObject(ref reader, context),
-                _ => throw new NotImplementedException($"Unexpected token {reader.TokenType} encountered"),
-            };
-        }
-
-        
 
         public static object CreateInstanceFromTypeName(ref Utf8JsonReader reader, Dictionary<string, Type> classLookup)
         {
@@ -355,9 +340,6 @@ namespace Vent.ToJson
 
             return false;
         }
-
-
-        
 
         public static object ReadEntity(this ref Utf8JsonReader reader,
             JsonReaderContext context,
@@ -523,6 +505,7 @@ namespace Vent.ToJson
             {
                 return str => Convert.ChangeType(str, keyType);
             }
+            // xxx add timestamp
 
             throw new NotImplementedException($"Cannot convert key from {keyType.Name}");
         }

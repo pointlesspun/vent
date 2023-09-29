@@ -40,6 +40,12 @@ namespace Vent.ToJson.Test
             Assert.AreEqual(nowOutput.Hour, dateTimeNow.Hour);
             Assert.AreEqual(nowOutput.Minute, dateTimeNow.Minute);
             Assert.AreEqual(nowOutput.Second, dateTimeNow.Second);
+
+            var ticksString = $"{dateTimeNow.Ticks}";
+            var ticksReader = new Utf8JsonReader(Encoding.UTF8.GetBytes(ticksString));
+            var ticksOutput = ticksReader.ReadVentValue<DateTime>();
+
+            Assert.AreEqual(ticksOutput, dateTimeNow);
         }
     }
 }

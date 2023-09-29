@@ -35,7 +35,11 @@ namespace Vent.ToJson
                 }
                 else if (typeof(IEnumerable).IsAssignableFrom(type))
                 {
-                    if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
+                    if (typeof(EntityRegistry).IsAssignableFrom(type))
+                    {
+                        WriteVentObject(writer, value);
+                    }
+                    else  if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
                     {
                         WriteVentList(writer, (IList)value, entitySerialization);
                     }

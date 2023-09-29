@@ -9,6 +9,7 @@ namespace Vent.ToJson.Test.TestEntities
     {
         public void Read(ref Utf8JsonReader reader, JsonReaderContext _)
         {
+            Id = reader.ReadPrimitiveProperty<int>(nameof(Id));
             StringValue = reader.ReadPrimitiveProperty<string>(nameof(StringValue));
             IntValue = reader.ReadPrimitiveProperty<int>(nameof(IntValue));
         }
@@ -16,6 +17,7 @@ namespace Vent.ToJson.Test.TestEntities
         // we only write some selected properties
         public void Write(Utf8JsonWriter writer)
         {
+            writer.WriteProperty(nameof(Id), Id);
             writer.WriteProperty(nameof(StringValue), StringValue);
             writer.WriteProperty(nameof(IntValue), IntValue);
         }
