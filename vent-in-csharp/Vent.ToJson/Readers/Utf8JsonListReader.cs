@@ -67,34 +67,6 @@ namespace Vent.ToJson.Readers
             }
         }
 
-        public static IList ReadValueList(
-            this ref Utf8JsonReader reader,
-            JsonReaderContext context,
-            Type listType, 
-            Type listElementType,
-            EntitySerialization entitySerialization = EntitySerialization.AsReference)
-        {
-            if (reader.TokenType == JsonTokenType.StartArray)
-            {
-                var listValue = (IList)Activator.CreateInstance(listType);
-
-                reader.ReadAnyToken();
-
-                while (reader.TokenType != JsonTokenType.EndArray)
-                {
-                    AddValueToList(context, listValue, 
-                        reader.ReadVentValue(listElementType, context, entitySerialization));
-
-                    reader.ReadAnyToken();
-                }
-
-                return listValue;
-            }
-            else
-            {
-                throw new JsonException($"expected JsonTokenType.StartArray but found {reader.TokenType}.");
-            }
-        }
 
         private static void AddValueToList(JsonReaderContext context, IList list, object value)
         {
