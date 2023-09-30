@@ -40,13 +40,31 @@ namespace Vent.ToJson.Readers
             EntitySerialization entitySerialization
         )
         {
-            if (reader.TokenType != JsonTokenType.Null)
+            if (reader.TokenType == JsonTokenType.Null)
             {
-                return ReadValueList(ref reader, context,
-                    typeof(List<>).MakeGenericType(listElementType), listElementType, entitySerialization);
+                return null;
             }
-            
-            return null;
+
+            if (reader.TokenType == JsonTokenType.StartArray)
+            {
+                var listValue = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(listElementType));
+
+                reader.ReadAnyToken();
+
+                while (reader.TokenType != JsonTokenType.EndArray)
+                {
+                    AddValueToList(context, listValue,
+                        reader.ReadVentValue(listElementType, context, entitySerialization));
+
+                    reader.ReadAnyToken();
+                }
+
+                return listValue;
+            }
+            else
+            {
+                throw new JsonException($"expected JsonTokenType.StartArray but found {reader.TokenType}.");
+            }
         }
 
         public static IList ReadValueList(
@@ -59,31 +77,15 @@ namespace Vent.ToJson.Readers
             if (reader.TokenType == JsonTokenType.StartArray)
             {
                 var listValue = (IList)Activator.CreateInstance(listType);
-                var skipNextRead = false;
+
+                reader.ReadAnyToken();
 
                 while (reader.TokenType != JsonTokenType.EndArray)
                 {
-                    if (skipNextRead)
-                    {
-                        skipNextRead = false;
-                    }
-                    else
-                    { 
-                        reader.ReadAnyToken();
-                    }
+                    AddValueToList(context, listValue, 
+                        reader.ReadVentValue(listElementType, context, entitySerialization));
 
-                    if (reader.TokenType == JsonTokenType.StartArray)
-                    {
-                        AddValueToList(context, listValue, 
-                            reader.ReadVentValue(listElementType, context, entitySerialization));
-                        skipNextRead = true;
-                        reader.ReadAnyToken();
-                    }
-                    else if (reader.TokenType != JsonTokenType.EndArray)
-                    {
-                        AddValueToList(context, listValue, 
-                            reader.ReadVentValue(listElementType, context, entitySerialization));
-                    }                    
+                    reader.ReadAnyToken();
                 }
 
                 return listValue;
