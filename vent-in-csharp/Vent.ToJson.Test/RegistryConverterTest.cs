@@ -50,17 +50,17 @@ namespace Vent.ToJson.Test
         {
             var registry = new EntityRegistry();
             var str1 = registry.Add(new StringEntity("foo"));
-            registry.Add(new EntityReferenceEntity(str1));
+            registry.Add(new ObjectEntity<IEntity>(str1));
 
             var str2 = new StringEntity("bar");
 
             // point to an entity ahead, this will require the converter
             // to delay registration until str2 appears in the store
-            registry.Add(new EntityReferenceEntity(str2));
+            registry.Add(new ObjectEntity<IEntity>(str2));
             registry.Add(str2);
             
             // add entity with a null reference
-            registry.Add(new EntityReferenceEntity());
+            registry.Add(new ObjectEntity<IEntity>());
 
             CloneAndTest(registry);
         }
@@ -353,8 +353,8 @@ namespace Vent.ToJson.Test
         {
             var innerFoo = new StringEntity("inner-foo");
             var innerBar = new StringEntity("inner-bar");
-            var innerFooReference = new EntityReferenceEntity(innerFoo);
-            var innerBarReference = new EntityReferenceEntity(innerBar);
+            var innerFooReference = new ObjectEntity<IEntity>(innerFoo);
+            var innerBarReference = new ObjectEntity<IEntity>(innerBar);
 
             var innerRegistry = new EntityRegistry()
             {
