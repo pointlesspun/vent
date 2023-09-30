@@ -1,20 +1,41 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace Vent.ToJson.Readers
 {
     public static class Utf8JsonObjectReader
     {
+        public static T ReadObjectFromJson<T>(
+            string jsonText,
+            JsonReaderContext context = null
+        )
+        {
+            var objectReader = new Utf8JsonReader(Encoding.UTF8.GetBytes(jsonText));
+            return ReadObject<T>(ref objectReader, context);
+        }
+
+        public static T ReadObject<T>(
+            this ref Utf8JsonReader reader,
+            JsonReaderContext context = null
+        )
+        {
+            // create a new context if none was provided
+            context ??= new JsonReaderContext(new EntityRegistry(), ClassLookup.CreateDefault());
+
+            if (reader.TokenType == JsonTokenType.None)
+            {
+                reader.Read();
+            }
+
+            return (T)ReadObject(ref reader, context, typeof(T));
+        }
+
         /// <summary>
         /// </summary>
         /// <param name="reader"></param>
         /// <param name="contextStack"></param>
         /// <returns></returns>
-        public static object ReadVentObject(this ref Utf8JsonReader reader,
+        public static object ReadObject(this ref Utf8JsonReader reader,
             JsonReaderContext context,
             Type objectType)
         {
@@ -28,7 +49,7 @@ namespace Vent.ToJson.Readers
             if (reader.TokenType == JsonTokenType.StartObject)
             {
                 var obj = Activator.CreateInstance(objectType);
-                ReadVentObjectProperties(ref reader, context, obj);
+                ReadObjectProperties(ref reader, context, obj);
                 return obj;
             }
             else
@@ -37,7 +58,7 @@ namespace Vent.ToJson.Readers
             }
         }
 
-        public static void ReadVentObjectProperties(
+        public static void ReadObjectProperties(
                 this ref Utf8JsonReader reader,
                 JsonReaderContext context,
                 object obj)
@@ -53,11 +74,11 @@ namespace Vent.ToJson.Readers
             }
             else
             {
-                while (ReadVentObjectProperty(ref reader, context, obj)) ;
+                while (ReadObjectProperty(ref reader, context, obj));
             }
         }
 
-        public static bool ReadVentObjectProperty(
+        public static bool ReadObjectProperty(
                 this ref Utf8JsonReader reader,
                 JsonReaderContext context,
                 object obj)

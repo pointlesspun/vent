@@ -5,6 +5,8 @@ using Vent.PropertyEntities;
 using Vent.ToJson.Readers;
 using Vent.ToJson.Test.TestEntities;
 
+using static Vent.ToJson.Utf8JsonWriterExtensions;
+
 namespace Vent.ToJson.Test
 {
     [TestClass]
@@ -112,7 +114,7 @@ namespace Vent.ToJson.Test
                 new ObjectWrapper<IEntity>(context.TopRegistry[2])
             };
 
-            var listString = WriteValue(list, EntitySerialization.AsValue);
+            var listString = WriteObjectToJsonString(list, EntitySerialization.AsValue);
             var listOutput = Utf8JsonListReader.ReadListFromJson<IEntity>(listString, context, EntitySerialization.AsValue);
             
             Assert.IsTrue(list.SequenceEqual(listOutput));
@@ -138,7 +140,7 @@ namespace Vent.ToJson.Test
                 new ObjectEntity<IEntity>(context.TopRegistry[2]),
             };
 
-            var listString = WriteValue(list, EntitySerialization.AsValue);
+            var listString = WriteObjectToJsonString(list, EntitySerialization.AsValue);
             var listOutput = Utf8JsonListReader.ReadListFromJson<IEntity>(listString, context, EntitySerialization.AsValue);
 
             Assert.IsTrue(list.SequenceEqual(listOutput));
@@ -175,29 +177,13 @@ namespace Vent.ToJson.Test
                 },
             };
 
-            var listString = WriteValue(list, EntitySerialization.AsValue);
+            var listString = WriteObjectToJsonString(list, EntitySerialization.AsValue);
             var listOutput = Utf8JsonListReader.ReadListFromJson<List<IEntity>>(listString, context, EntitySerialization.AsValue);
 
             for (var i = 0; i < list.Count; i++)
             {
                 Assert.IsTrue(list[i].SequenceEqual(listOutput[i]));
             }
-        }
-
-        // entity list as reference 
-        private static string WriteValue(object obj, EntitySerialization entitySerialization = EntitySerialization.AsReference)
-        {
-            var options = new JsonWriterOptions
-            {
-                Indented = true,
-                // don't want to see escaped characters in the tests
-                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-            };
-            var memoryStream = new MemoryStream();
-            var writer = new Utf8JsonWriter(memoryStream, options);
-            writer.WriteVentValue(obj, entitySerialization);
-            writer.Flush();
-            return Encoding.UTF8.GetString(memoryStream.ToArray());
-        }
+        }       
     }
 }

@@ -2,12 +2,30 @@
 using System.Reflection;
 using System.Reflection.PortableExecutable;
 using System.Runtime.Serialization;
+using System.Text.Encodings.Web;
+using System.Text;
 using System.Text.Json;
 
 namespace Vent.ToJson
 {
     public static class Utf8JsonWriterExtensions
     {
+        // entity list as reference 
+        public static string WriteObjectToJsonString(object obj, EntitySerialization entitySerialization = EntitySerialization.AsReference)
+        {
+            var options = new JsonWriterOptions
+            {
+                Indented = true,
+                // don't want to see escaped characters in the tests
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
+            var memoryStream = new MemoryStream();
+            var writer = new Utf8JsonWriter(memoryStream, options);
+            writer.WriteVentValue(obj, entitySerialization);
+            writer.Flush();
+            return Encoding.UTF8.GetString(memoryStream.ToArray());
+        }
+
         public static void WriteVentValue(
             this Utf8JsonWriter writer,
             object value,
@@ -122,7 +140,10 @@ namespace Vent.ToJson
             {
                 writer.WriteStartObject();
 
-                writer.WriteString(SharedJsonTags.EntityTypeTag, obj.GetType().ToVentClassName());
+                if (obj is IEntity)
+                {
+                    writer.WriteString(SharedJsonTags.EntityTypeTag, obj.GetType().ToVentClassName());
+                }
 
                 if (obj is ICustomJsonSerializable customSerializable)
                 {

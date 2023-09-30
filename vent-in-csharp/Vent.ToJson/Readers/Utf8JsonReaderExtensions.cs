@@ -76,7 +76,7 @@ namespace Vent.ToJson.Readers
             }
             else if (reader.TokenType == JsonTokenType.StartObject)
             {
-                return reader.ReadVentObject(context, valueType);
+                return reader.ReadObject(context, valueType);
             }
 
             throw new NotImplementedException($"Cannot parse {valueType} to a value");
@@ -286,7 +286,7 @@ namespace Vent.ToJson.Readers
                 {
                     context.Push(registry);
 
-                    reader.ReadVentObjectProperties(context, entity);
+                    reader.ReadObjectProperties(context, entity);
 
                     // are there any references to resolve ?
                     if (context.Top.ForwardReferenceLookup != null)
@@ -298,7 +298,7 @@ namespace Vent.ToJson.Readers
                 }
                 else
                 {
-                    reader.ReadVentObjectProperties(context, entity);
+                    reader.ReadObjectProperties(context, entity);
                 }
 
                 return entity;
