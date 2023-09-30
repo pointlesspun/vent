@@ -119,6 +119,32 @@ namespace Vent.ToJson.Test
         }
 
         [TestMethod]
+        public void EntityReferenceTest()
+        {
+            var context = new JsonReaderContext(
+                new EntityRegistry()
+                {
+                    new StringEntity("foo"),
+                    new StringEntity("bar"),
+                    new StringEntity("qad"),
+                },
+                ClassLookup.CreateDefault()
+            );
+
+            var list = new List<IEntity>()
+            {
+                new ObjectEntity<IEntity>(context.TopRegistry[0]),
+                new ObjectEntity<IEntity>(context.TopRegistry[1]),
+                new ObjectEntity<IEntity>(context.TopRegistry[2]),
+            };
+
+            var listString = WriteValue(list, EntitySerialization.AsValue);
+            var listOutput = Utf8JsonListReader.ReadListFromJson<IEntity>(listString, context, EntitySerialization.AsValue);
+
+            Assert.IsTrue(list.SequenceEqual(listOutput));
+        }
+
+        [TestMethod]
         public void NestedEntityValueListTest()
         {
             var registry = new EntityRegistry()
