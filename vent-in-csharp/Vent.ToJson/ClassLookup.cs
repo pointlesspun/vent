@@ -6,6 +6,11 @@ namespace Vent.ToJson
     {
         public static Dictionary<string, Type> CreateFrom(params Assembly[] assemblies)
         {
+            return CreateFrom((IEnumerable<Assembly>) assemblies);
+        }
+
+        public static Dictionary<string, Type> CreateFrom(IEnumerable<Assembly> assemblies)
+        {
             var entityType = typeof(IEntity);
             var classLookup = new Dictionary<string, Type>();
 
@@ -32,14 +37,13 @@ namespace Vent.ToJson
 
         public static Dictionary<string, Type> CreateDefault()
         {
-            var currentAssembly = Assembly.GetExecutingAssembly();
-            var entityAssembly = typeof(IEntity).Assembly;
+            var assemblySet = new HashSet<Assembly>(){
+                Assembly.GetCallingAssembly(),
+                Assembly.GetExecutingAssembly(),
+                typeof(IEntity).Assembly
+            };
 
-            var baseLookup = entityAssembly == currentAssembly 
-                            ? CreateFrom(entityAssembly)
-                            : CreateFrom(entityAssembly, currentAssembly);
-
-            return baseLookup
+            return CreateFrom(assemblySet)
                     .WithType(typeof(List<>))
                     .WithType(typeof(Dictionary<,>));
         }

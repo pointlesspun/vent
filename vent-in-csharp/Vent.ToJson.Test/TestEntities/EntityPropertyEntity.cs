@@ -3,13 +3,13 @@
     /// <summary>
     /// Entity containing a reference to another entity
     /// </summary>
-    public class EntityPropertyEntity : EntityBase
+    public class EntityReferenceEntity : EntityBase
     {
         public IEntity Other { get; set; }
 
-        public EntityPropertyEntity() { }
+        public EntityReferenceEntity() { }
 
-        public EntityPropertyEntity(IEntity other)
+        public EntityReferenceEntity(IEntity other)
         {
             Other = other;
         }
@@ -18,7 +18,7 @@
         {
             if (obj == this) return true;
 
-            if (obj != null && obj is EntityPropertyEntity otherProperty)
+            if (obj != null && obj is EntityReferenceEntity otherProperty)
             {
                 return otherProperty.Other == null && Other == null
                      || (otherProperty.Other.Id == Other.Id

@@ -1,10 +1,21 @@
 ﻿using System.Collections;
+using System.Text;
 using System.Text.Json;
 
 namespace Vent.ToJson.Readers
 {
     public static class Utf8JsonListReader
     {
+        public static List<T> ReadListFromJson<T>(
+            string jsonText,
+            JsonReaderContext context = null,
+            EntitySerialization entitySerialization = EntitySerialization.AsReference
+        )
+        {
+            var listReader = new Utf8JsonReader(Encoding.UTF8.GetBytes(jsonText));
+            return ReadList<T>(ref listReader, context, entitySerialization);
+        }
+
         public static List<T> ReadList<T>(
             this ref Utf8JsonReader reader,
             JsonReaderContext context = null,

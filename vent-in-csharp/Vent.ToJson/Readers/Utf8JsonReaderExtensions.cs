@@ -76,7 +76,7 @@ namespace Vent.ToJson.Readers
             }
             else if (reader.TokenType == JsonTokenType.StartObject)
             {
-                return ReadVentObject(ref reader, context);
+                return ReadVentObject(ref reader, context, valueType);
             }
 
             throw new NotImplementedException($"Cannot parse {valueType} to a value");
@@ -120,22 +120,15 @@ namespace Vent.ToJson.Readers
         }
 
         /// <summary>
-        /// Read an object using the Vent object convention. This convention expects the format to be
-        ///
-        /// "{
-        ///     "__entityType": "className",
-        ///     ... vent compatible properties
-        /// }"
-        /// 
-        /// The "className" needs to be declared in the JsonReaderContext.ClassLookup.
-        /// 
-        /// If this call is succesfull, the reader will be at the token after the closing bracket.
+        /// Read an object.
         /// 
         /// </summary>
         /// <param name="reader"></param>
         /// <param name="contextStack"></param>
         /// <returns></returns>
-        public static object ReadVentObject(this ref Utf8JsonReader reader, JsonReaderContext context)
+        public static object ReadVentObject(this ref Utf8JsonReader reader, 
+            JsonReaderContext context,
+            Type objectType)
         {
             // early exit in case of a null
             if (reader.TokenType == JsonTokenType.Null)
@@ -144,16 +137,15 @@ namespace Vent.ToJson.Readers
             }
 
             // if there is a start of the object read it
-            if (reader.TokenType == JsonTokenType.StartObject) 
+            if (reader.TokenType == JsonTokenType.StartObject)
             {
-                reader.Read();
-            }
-
-            reader.ReadPropertyName(SharedJsonTags.EntityTypeTag);
-            {
-                var obj = CreateInstanceFromTypeName(ref reader, context.ClassLookup);
+                var obj = Activator.CreateInstance(objectType);
                 ReadVentObjectProperties(ref reader, context, obj);
                 return obj;
+            }
+            else
+            {
+                throw new JsonException($"Expected start of an object, found {reader.TokenType}.");
             }
         }
 

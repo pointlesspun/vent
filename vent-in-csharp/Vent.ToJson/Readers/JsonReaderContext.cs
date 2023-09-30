@@ -84,6 +84,11 @@ namespace Vent.ToJson
             RegistryStack = new RegistryContextStack();
         }
 
+        public JsonReaderContext(Dictionary<string, Type> classLookup)
+        {
+            ClassLookup = classLookup;
+        }
+
         public JsonReaderContext(EntityRegistry registry, Dictionary<string, Type> classLookup)
             : this(new RegistryContext(registry), classLookup)
         {

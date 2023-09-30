@@ -50,17 +50,17 @@ namespace Vent.ToJson.Test
         {
             var registry = new EntityRegistry();
             var str1 = registry.Add(new StringEntity("foo"));
-            registry.Add(new EntityPropertyEntity(str1));
+            registry.Add(new EntityReferenceEntity(str1));
 
             var str2 = new StringEntity("bar");
 
             // point to an entity ahead, this will require the converter
             // to delay registration until str2 appears in the store
-            registry.Add(new EntityPropertyEntity(str2));
+            registry.Add(new EntityReferenceEntity(str2));
             registry.Add(str2);
             
             // add entity with a null reference
-            registry.Add(new EntityPropertyEntity());
+            registry.Add(new EntityReferenceEntity());
 
             CloneAndTest(registry);
         }
@@ -353,8 +353,8 @@ namespace Vent.ToJson.Test
         {
             var innerFoo = new StringEntity("inner-foo");
             var innerBar = new StringEntity("inner-bar");
-            var innerFooReference = new EntityPropertyEntity(innerFoo);
-            var innerBarReference = new EntityPropertyEntity(innerBar);
+            var innerFooReference = new EntityReferenceEntity(innerFoo);
+            var innerBarReference = new EntityReferenceEntity(innerBar);
 
             var innerRegistry = new EntityRegistry()
             {
@@ -442,7 +442,7 @@ namespace Vent.ToJson.Test
             };
         }
 
-        private void CloneAndTest(EntityRegistry registry, Action<EntityRegistry, EntityRegistry>  testActions = null)
+        private void CloneAndTest(EntityRegistry registry, Action<EntityRegistry, EntityRegistry> testActions = null)
         {
             var serializeOptions = CreateTestOptions();
             var json = JsonSerializer.Serialize(registry, serializeOptions);
