@@ -40,63 +40,13 @@ namespace Vent.ToJson.Readers
             EntitySerialization entitySerialization
         )
         {
-            if (reader.TokenType == JsonTokenType.Null)
+            if (reader.TokenType != JsonTokenType.Null)
             {
-                return null;
+                return ReadValueList(ref reader, context,
+                    typeof(List<>).MakeGenericType(listElementType), listElementType, entitySerialization);
             }
             
-            var listType = typeof(List<>).MakeGenericType(listElementType);
-
-            if (typeof(IEntity).IsAssignableFrom(listElementType) 
-                && entitySerialization == EntitySerialization.AsReference)
-            {
-                return ReadEntityList(ref reader, context, listType);
-            }
-            else
-            {
-                return ReadValueList(ref reader, context, listType, listElementType, entitySerialization);
-            }
-        }
-
-        public static IList ReadEntityList(
-            this ref Utf8JsonReader reader,
-            JsonReaderContext context,
-            Type listType
-        )
-        {
-            if (reader.TokenType == JsonTokenType.StartArray)
-            {
-                var listValue = (IList)Activator.CreateInstance(listType);
-
-                while (reader.TokenType != JsonTokenType.EndArray)
-                {   
-                    reader.ReadAnyToken();
-
-                    if (reader.TokenType != JsonTokenType.EndArray)
-                    {
-                        // xxx test if entity points to -1
-                        var entityId = reader.GetInt32();
-                        if (context.TopRegistry.ContainsKey(entityId))
-                        {
-                            listValue.Add(context.TopRegistry[entityId]);
-                        }
-                        else
-                        {
-                            context.Top.AddReference(listValue,
-                                new ForwardReference(context.TopRegistry, entityId, listValue.Count));
-                            // add a null value, this will be replaced when the forward references are
-                            // resolved with the actual entity
-                            listValue.Add(null);
-                        }
-                    }
-                }
-                
-                return listValue;
-            }
-            else
-            {
-                throw new JsonException($"expected JsonTokenType.StartArray but found {reader.TokenType}.");
-            }
+            return null;
         }
 
         public static IList ReadValueList(
@@ -124,13 +74,15 @@ namespace Vent.ToJson.Readers
 
                     if (reader.TokenType == JsonTokenType.StartArray)
                     {
-                        listValue.Add(reader.ReadVentValue(listElementType, context, entitySerialization));
+                        AddValueToList(context, listValue, 
+                            reader.ReadVentValue(listElementType, context, entitySerialization));
                         skipNextRead = true;
                         reader.ReadAnyToken();
                     }
                     else if (reader.TokenType != JsonTokenType.EndArray)
                     {
-                        listValue.Add(reader.ReadVentValue(listElementType, context, entitySerialization));
+                        AddValueToList(context, listValue, 
+                            reader.ReadVentValue(listElementType, context, entitySerialization));
                     }                    
                 }
 
@@ -139,6 +91,20 @@ namespace Vent.ToJson.Readers
             else
             {
                 throw new JsonException($"expected JsonTokenType.StartArray but found {reader.TokenType}.");
+            }
+        }
+
+        private static void AddValueToList(JsonReaderContext context, IList list, object value)
+        {
+            if (value is ForwardReference forwardReference)
+            {
+                forwardReference.Key = list.Count;
+                context.Top.AddReference(list, forwardReference);
+                list.Add(null);
+            }
+            else
+            {
+                list.Add(value);
             }
         }
     }

@@ -37,7 +37,7 @@ namespace Vent.ToJson.Readers
             // create a new context if none was provided
             context ??= new JsonReaderContext(new EntityRegistry(), ClassLookup.CreateDefault());
 
-            // xxx todo add array
+            // check if the reader has read something. if not read the first token
             if (reader.TokenType == JsonTokenType.None)
             {
                 reader.ReadAnyToken();
