@@ -119,8 +119,8 @@ namespace Vent.ToJson.Test
             {
                 // ObjectWrapper's value is defined as [SerializeAsValue], so
                 // the MultiPropertyTestEntity will be fully serialized as a value
-                new ObjectWrapper<MultiPropertyTestEntity>(multiPropertyEntity),
-                new ObjectWrapper<MultiPropertyTestEntity>()
+                new ObjectWrapperEntity<MultiPropertyTestEntity>(multiPropertyEntity),
+                new ObjectWrapperEntity<MultiPropertyTestEntity>()
             });
         }
 
@@ -138,7 +138,7 @@ namespace Vent.ToJson.Test
                 multiPropertyEntity,
                 // this will 'copy' multiPropertyEntity as its value property is marked as  
                 // SerializeAsValue
-                new ObjectWrapper<MultiPropertyTestEntity>(multiPropertyEntity),
+                new ObjectWrapperEntity<MultiPropertyTestEntity>(multiPropertyEntity),
                 // this will reference multiPropertyEntity as its property is not marked 
                 // as SerializeAsValue
                 new PropertyEntity<IEntity>(multiPropertyEntity)
@@ -239,7 +239,7 @@ namespace Vent.ToJson.Test
             var ent1 = new StringEntity("foo");
             var ent2 = new StringEntity("bar");
 
-            var entDictionary = new ObjectWrapper<Dictionary<string, StringEntity>>()
+            var entDictionary = new ObjectWrapperEntity<Dictionary<string, StringEntity>>()
             {
                 // ent1 and ent2 are not added to the registry because the objectwrapper
                 // declares the value as SerializeAsValue, so the entities are actually
@@ -305,7 +305,7 @@ namespace Vent.ToJson.Test
             CloneAndTest(
                 new EntityRegistry()
                 {
-                    new ObjectWrapper<List<StringEntity>>()
+                    new ObjectWrapperEntity<List<StringEntity>>()
                     {
 
                         Value = new List<StringEntity>()
@@ -319,8 +319,8 @@ namespace Vent.ToJson.Test
                 {
                     AssertRegistriesPropertiesMatch(source, clone);
 
-                    var sourceList = (source[0] as ObjectWrapper<List<StringEntity>>).Value;
-                    var cloneList = (clone[0] as ObjectWrapper<List<StringEntity>>).Value;
+                    var sourceList = (source[0] as ObjectWrapperEntity<List<StringEntity>>).Value;
+                    var cloneList = (clone[0] as ObjectWrapperEntity<List<StringEntity>>).Value;
 
                     Assert.IsTrue(sourceList.SequenceEqual(cloneList));
                 }

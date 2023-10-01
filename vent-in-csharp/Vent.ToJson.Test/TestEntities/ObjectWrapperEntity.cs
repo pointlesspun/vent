@@ -2,13 +2,13 @@
 
 namespace Vent.ToJson.Test.TestEntities
 {
-    public class ObjectWrapper<T> : ObjectEntity<T> where T : class
+    public class ObjectWrapperEntity<T> : ObjectEntity<T> where T : class
     {
         [SerializeAsValue]
         public override T Value { get => base.Value; set => base.Value = value; }
 
-        public ObjectWrapper() : base() { }
+        public ObjectWrapperEntity() : base() { }
 
-        public ObjectWrapper(T value) : base(value) { }
+        public ObjectWrapperEntity(T value) : base(value) { }
     }
 }

@@ -107,11 +107,11 @@ namespace Vent.ToJson.Test
 
             var list = new List<IEntity>()
             {
-                new ObjectWrapper<IEntity>(context.TopRegistry[0]),
+                new ObjectWrapperEntity<IEntity>(context.TopRegistry[0]),
                 null,
-                new ObjectWrapper<IEntity>(context.TopRegistry[1]),
+                new ObjectWrapperEntity<IEntity>(context.TopRegistry[1]),
                 null,
-                new ObjectWrapper<IEntity>(context.TopRegistry[2])
+                new ObjectWrapperEntity<IEntity>(context.TopRegistry[2])
             };
 
             var listString = WriteObjectToJsonString(list, EntitySerialization.AsValue);
@@ -162,18 +162,18 @@ namespace Vent.ToJson.Test
             {
                 new List<IEntity>()
                 {
-                    new ObjectWrapper<IEntity>(registry[0]),
-                    new ObjectWrapper<IEntity>(registry[1]),
+                    new ObjectWrapperEntity<IEntity>(registry[0]),
+                    new ObjectWrapperEntity<IEntity>(registry[1]),
                 },
                 new List<IEntity>()
                 {
-                    new ObjectWrapper<IEntity>(registry[0]),
-                    new ObjectWrapper<IEntity>(registry[2]),
+                    new ObjectWrapperEntity<IEntity>(registry[0]),
+                    new ObjectWrapperEntity<IEntity>(registry[2]),
                 },
                 new List<IEntity>()
                 {
-                    new ObjectWrapper<IEntity>(registry[1]),
-                    new ObjectWrapper<IEntity>(registry[2]),
+                    new ObjectWrapperEntity<IEntity>(registry[1]),
+                    new ObjectWrapperEntity<IEntity>(registry[2]),
                 },
             };
 

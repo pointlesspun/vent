@@ -89,6 +89,11 @@ namespace Vent.ToJson.Readers
             {
                 var propertyName = reader.GetString();
 
+                if (propertyName == SharedJsonTags.EntityTypeTag)
+                {
+                    throw new EntitySerializationException($"Trying to serialize entity of type {type.ToVentClassName()} as an object but it's an entity. Use ReadEntity instead of ReadObject.");
+                }
+
                 var info = type.GetProperty(propertyName);
 
                 if (info != null)

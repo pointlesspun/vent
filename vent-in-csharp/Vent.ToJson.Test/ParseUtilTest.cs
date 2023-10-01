@@ -82,18 +82,18 @@ namespace Vent.ToJson.Test
         [TestMethod]
         public void VentClassNameTest()
         {
-            var name = typeof(ObjectWrapper<>).ToVentClassName();
+            var name = typeof(ObjectWrapperEntity<>).ToVentClassName();
 
-            Assert.IsTrue(name == "Vent.ToJson.Test.TestEntities.ObjectWrapper");
+            Assert.IsTrue(name == "Vent.ToJson.Test.TestEntities.ObjectWrapperEntity");
 
-            name = typeof(ObjectWrapper<string>).ToVentClassName();
+            name = typeof(ObjectWrapperEntity<string>).ToVentClassName();
 
 
-            Assert.IsTrue(name == "Vent.ToJson.Test.TestEntities.ObjectWrapper<System.String>");
+            Assert.IsTrue(name == "Vent.ToJson.Test.TestEntities.ObjectWrapperEntity<System.String>");
 
-            name = typeof(ObjectWrapper<ObjectWrapper<string>>).ToVentClassName();
+            name = typeof(ObjectWrapperEntity<ObjectWrapperEntity<string>>).ToVentClassName();
 
-            Assert.IsTrue(name == "Vent.ToJson.Test.TestEntities.ObjectWrapper<Vent.ToJson.Test.TestEntities.ObjectWrapper<System.String>>");
+            Assert.IsTrue(name == "Vent.ToJson.Test.TestEntities.ObjectWrapperEntity<Vent.ToJson.Test.TestEntities.ObjectWrapperEntity<System.String>>");
 
             name = typeof(Dictionary<string, StringEntity>).ToVentClassName();
 
@@ -103,27 +103,27 @@ namespace Vent.ToJson.Test
         [TestMethod]
         public void ResolveTypeTest()
         {
-            var lookup = ClassLookup.CreateFrom(typeof(ObjectWrapper<>).Assembly,
+            var lookup = ClassLookup.CreateFrom(typeof(ObjectWrapperEntity<>).Assembly,
                                                     typeof(IEntity).Assembly)
                                                     .WithType(typeof(Dictionary<,>));
 
-            var name = typeof(ObjectWrapper<string>).ToVentClassName();
+            var name = typeof(ObjectWrapperEntity<string>).ToVentClassName();
 
-            Assert.IsTrue(name == "Vent.ToJson.Test.TestEntities.ObjectWrapper<System.String>");
+            Assert.IsTrue(name == "Vent.ToJson.Test.TestEntities.ObjectWrapperEntity<System.String>");
 
             var node = VentClassName.ParseVentClassName(name);
             var nodeType = node.ResolveType(lookup);
 
-            Assert.IsTrue(nodeType == typeof(ObjectWrapper<string>));
+            Assert.IsTrue(nodeType == typeof(ObjectWrapperEntity<string>));
             
-            name = typeof(ObjectWrapper<ObjectWrapper<string>>).ToVentClassName();
+            name = typeof(ObjectWrapperEntity<ObjectWrapperEntity<string>>).ToVentClassName();
 
-            Assert.IsTrue(name == "Vent.ToJson.Test.TestEntities.ObjectWrapper<Vent.ToJson.Test.TestEntities.ObjectWrapper<System.String>>");
+            Assert.IsTrue(name == "Vent.ToJson.Test.TestEntities.ObjectWrapperEntity<Vent.ToJson.Test.TestEntities.ObjectWrapperEntity<System.String>>");
 
             node = VentClassName.ParseVentClassName(name);
             nodeType = node.ResolveType(lookup);
 
-            Assert.IsTrue(nodeType == typeof(ObjectWrapper<ObjectWrapper<string>>));
+            Assert.IsTrue(nodeType == typeof(ObjectWrapperEntity<ObjectWrapperEntity<string>>));
 
             name = typeof(Dictionary<string, StringEntity>).ToVentClassName();
 
