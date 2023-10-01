@@ -71,7 +71,7 @@ namespace Vent.ToJson.Readers
                 }
                 else if (valueType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
                 {
-                    return ReadDictionary(ref reader, context, valueType, entitySerialization);
+                    return reader.ReadDictionary(context, valueType, entitySerialization);
                 }
             }
             else if (reader.TokenType == JsonTokenType.StartObject)
@@ -114,8 +114,7 @@ namespace Vent.ToJson.Readers
             {
                 return DateTime.Parse(reader.GetString());
             }
-            // xxx test
-
+            
             throw new JsonException($"JsonReader can't covert {reader.TokenType} to a DateTime.");
         }
 
@@ -309,52 +308,7 @@ namespace Vent.ToJson.Readers
 
         
 
-        public static IDictionary ReadDictionary(this ref Utf8JsonReader reader,
-            JsonReaderContext context,
-            Type type,
-            EntitySerialization entitySerialization = EntitySerialization.AsReference)
-        {
-            var keyConverter = GetKeyConverter(type.GetGenericArguments()[0]);
-            var valueType = type.GetGenericArguments()[1];
-            var dictionary = (IDictionary)Activator.CreateInstance(type);
-
-            while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
-            {
-                var key = keyConverter(reader.GetString());
-
-                reader.ReadAnyToken();
-                {
-                    var value = ReadVentValue(ref reader, valueType, context, entitySerialization);
-
-                    if (value is ForwardReference reference)
-                    {
-                        reference.Key = key;
-                        context.Top.AddReference(dictionary, reference);
-                    }
-                    else
-                    {
-                        dictionary[key] = value;
-                    }
-                }
-            }
-
-            return dictionary;
-        }
-
-        private static Func<string, object> GetKeyConverter(Type keyType)
-        {
-            if (keyType == typeof(string))
-            {
-                return (str) => str;
-            }
-            else if (keyType.IsPrimitive)
-            {
-                return str => Convert.ChangeType(str, keyType);
-            }
-            // xxx add timestamp
-
-            throw new NotImplementedException($"Cannot convert key from {keyType.Name}");
-        }
+        
     }
 }
 

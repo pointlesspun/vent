@@ -112,22 +112,39 @@ namespace Vent.ToJson
 
             Contract.Requires<EntitySerializationException>(IsValidDictionaryKey(keyType), $"Cannot serialize dictionary keys of type {keyType}");
 
+            var keyConverter = GetKeyConverter(keyType);
+
             writer.WriteStartObject();
 
             foreach (DictionaryEntry entry in dictionary)
             {
-                writer.WritePropertyName(entry.Key.ToString());
+                writer.WritePropertyName(keyConverter(entry.Key));
                 WriteVentValue(writer, entry.Value, entitySerialization);
             }
 
             writer.WriteEndObject();
         }
 
+        private static Func<object, string> GetKeyConverter(Type keyType)
+        {
+            if (keyType == typeof(string) || keyType.IsPrimitive)
+            {
+                return (str) => str.ToString();
+            }
+            else if (keyType == typeof(DateTime))
+            {
+                return (dateTime) => ((DateTime)dateTime).Ticks.ToString();
+            }
+
+            throw new NotImplementedException($"Cannot convert key from {keyType.Name}");
+        }
+
         public static bool IsValidDictionaryKey(Type keyType)
         {
             return keyType != null
                 && (EntityReflection.IsPrimitiveOrString(keyType)
-                || EntityReflection.IsEntity(keyType));
+                || EntityReflection.IsEntity(keyType)
+                || keyType == typeof(DateTime));
         }
 
         public static void WriteVentObject(this Utf8JsonWriter writer, object obj)
