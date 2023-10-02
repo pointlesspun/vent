@@ -62,7 +62,7 @@ namespace Vent.ToJson.Test
             // add entity with a null reference
             registry.Add(new ObjectEntity<IEntity>());
 
-            CloneAndTest(registry);
+            CloneAndTest(registry, typeof(ObjectEntity<IEntity>));
         }
 
         [TestMethod]
@@ -121,7 +121,7 @@ namespace Vent.ToJson.Test
                 // the MultiPropertyTestEntity will be fully serialized as a value
                 new ObjectWrapperEntity<MultiPropertyTestEntity>(multiPropertyEntity),
                 new ObjectWrapperEntity<MultiPropertyTestEntity>()
-            });
+            }, typeof(ObjectWrapperEntity<MultiPropertyTestEntity>));
         }
 
         /// <summary>
@@ -142,7 +142,10 @@ namespace Vent.ToJson.Test
                 // this will reference multiPropertyEntity as its property is not marked 
                 // as SerializeAsValue
                 new PropertyEntity<IEntity>(multiPropertyEntity)
-            });
+            },
+            typeof(ObjectWrapperEntity<MultiPropertyTestEntity>),
+            typeof(PropertyEntity<IEntity>)
+            );
         }
 
         [TestMethod]
@@ -170,7 +173,8 @@ namespace Vent.ToJson.Test
                 var cloneDict = (clone[stringDictionary.Id] as ObjectEntity<Dictionary<string, string>>).Value;
 
                 AssertDictionaryValuesMatch(sourceDict, cloneDict);
-            });
+            },
+            typeof(ObjectEntity<Dictionary<string, string>>));
         }
 
         [TestMethod]
@@ -198,7 +202,8 @@ namespace Vent.ToJson.Test
                 var cloneDict = (clone[0] as ObjectEntity<Dictionary<int, int>>).Value;
 
                 AssertDictionaryValuesMatch(sourceDict, cloneDict);
-            });
+            },
+            typeof(ObjectEntity<Dictionary<int, int>>));
         }
 
         [TestMethod]
@@ -230,7 +235,8 @@ namespace Vent.ToJson.Test
                 var cloneDict = (clone[entDictionary.Id] as ObjectEntity<Dictionary<string, StringEntity>>).Value;
 
                 AssertDictionaryValuesMatch(sourceDict, cloneDict);
-            });
+            },
+            typeof(ObjectEntity<Dictionary<string, StringEntity>>));
         }
 
         [TestMethod]
@@ -263,7 +269,8 @@ namespace Vent.ToJson.Test
                 var cloneDict = (clone[entDictionary.Id] as ObjectEntity<Dictionary<string, StringEntity>>).Value;
 
                 AssertDictionaryValuesMatch(sourceDict, cloneDict);
-            });
+            },
+            typeof(ObjectWrapperEntity<Dictionary<string, StringEntity>>));
         }
 
         [TestMethod]
@@ -295,7 +302,8 @@ namespace Vent.ToJson.Test
                     var cloneList = (clone[1] as ObjectEntity<List<StringEntity>>).Value;
 
                     Assert.IsTrue(sourceList.SequenceEqual(cloneList));
-                }
+                },
+                typeof(ObjectEntity<List<StringEntity>>)
             );
         }
 
@@ -323,7 +331,8 @@ namespace Vent.ToJson.Test
                     var cloneList = (clone[0] as ObjectWrapperEntity<List<StringEntity>>).Value;
 
                     Assert.IsTrue(sourceList.SequenceEqual(cloneList));
-                }
+                },
+                typeof(ObjectWrapperEntity<List<StringEntity>>)
             );
         }
 
@@ -370,7 +379,8 @@ namespace Vent.ToJson.Test
                     new StringEntity("outer-foo"),
                     innerRegistry,
                     new StringEntity("outer-bar"),
-                }
+                },
+                typeof(ObjectEntity<IEntity>)
             );
         }
 
@@ -422,12 +432,21 @@ namespace Vent.ToJson.Test
         // xxx to test
         // - Entity with reference to Registry
         // - Entity History property
-        private static JsonSerializerOptions CreateTestOptions()
+        private static JsonSerializerOptions CreateTestOptions(params Type[] additionalTypes)
         {
             var classLookup = ClassLookup
                                 .CreateFrom(typeof(MultiPropertyTestEntity).Assembly, typeof(StringEntity).Assembly)
                                 .WithType(typeof(Dictionary<,>))
                                 .WithType(typeof(List<>));
+
+            if (additionalTypes != null && additionalTypes.Length > 0)
+            {
+                foreach (var type in additionalTypes)
+                {
+                    classLookup.WithType(type);
+                }
+            }
+
 
             var converter = new EntityRegistryConverter(classLookup);
             return new JsonSerializerOptions
@@ -442,9 +461,14 @@ namespace Vent.ToJson.Test
             };
         }
 
-        private void CloneAndTest(EntityRegistry registry, Action<EntityRegistry, EntityRegistry> testActions = null)
+        private void CloneAndTest(EntityRegistry registry, params Type[] additionalTypes)
+            => CloneAndTest(registry, null, additionalTypes);
+
+        private void CloneAndTest(EntityRegistry registry, 
+            Action<EntityRegistry, EntityRegistry> testActions = null,
+            params Type[] additionalTypes)
         {
-            var serializeOptions = CreateTestOptions();
+            var serializeOptions = CreateTestOptions(additionalTypes);
             var json = JsonSerializer.Serialize(registry, serializeOptions);
             var clone = JsonSerializer.Deserialize<EntityRegistry>(json, serializeOptions);
 

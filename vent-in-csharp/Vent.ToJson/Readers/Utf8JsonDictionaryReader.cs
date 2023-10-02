@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Text.Json;
 
@@ -93,8 +94,9 @@ namespace Vent.ToJson.Readers
                     return DateTime.Parse(str);
                 };
             }
+           
 
-            throw new NotImplementedException($"Cannot convert key from {keyType.Name}");
+            throw new NotImplementedException($"Cannot convert dictionary key from {keyType.Name}.");
         }
     }
 }

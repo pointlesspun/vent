@@ -14,6 +14,21 @@ namespace Vent.ToJson.Test
             Assert.IsNull(ReadDictionaryFromJson<string, string>(dictionaryString));
         }
 
+        /// <summary>
+        /// Can only use primitives or date
+        /// </summary>
+        [TestMethod]
+        [ExpectedException(typeof(NotImplementedException))]
+        public void ReadEntityIntDictionaryTest()
+        {
+            var dictionary = new Dictionary<int, int>()
+            {
+                { 1, 1 },
+            };
+            var dictionaryString = WriteObjectToJsonString(dictionary);
+            ReadDictionaryFromJson<IEntity, int>(dictionaryString);
+        }
+
         [TestMethod]
         public void ReadIntIntDictionaryTest()
         {
@@ -86,6 +101,24 @@ namespace Vent.ToJson.Test
                 {
                     Assert.IsTrue(innerKvp.Value == output[kvp.Key][innerKvp.Key]);
                 }
+            }
+        }
+
+        [TestMethod]
+        public void ReadStringListTest()
+        {
+            var dictionary = new Dictionary<string, List<string>>()
+            {
+                { "foo", new List<string>() { "innerfoo-key", "foo-value" }},
+                { "bar", new List<string>() { "innerbar-key", "bar-value" } },
+                { "baz", new List < string > () { "innerbaz-key", "baz-value" }},
+            };
+            var dictionaryString = WriteObjectToJsonString(dictionary);
+            var output = ReadDictionaryFromJson<string, List<string>>(dictionaryString);
+
+            foreach (var kvp in dictionary)
+            {
+                Assert.IsTrue(kvp.Value.SequenceEqual(output[kvp.Key]));
             }
         }
     }

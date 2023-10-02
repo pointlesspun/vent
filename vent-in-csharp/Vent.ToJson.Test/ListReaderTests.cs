@@ -103,6 +103,7 @@ namespace Vent.ToJson.Test
                     new StringEntity("qad"),
                 }, 
                 ClassLookup.CreateDefault()
+                    .WithType(typeof(ObjectWrapperEntity<IEntity>))
             );
 
             var list = new List<IEntity>()
@@ -130,7 +131,7 @@ namespace Vent.ToJson.Test
                     new StringEntity("bar"),
                     new StringEntity("qad"),
                 },
-                ClassLookup.CreateDefault()
+                ClassLookup.CreateDefault().WithType(typeof(ObjectEntity<IEntity>))
             );
 
             var list = new List<IEntity>()
@@ -156,7 +157,7 @@ namespace Vent.ToJson.Test
                 new StringEntity("qad"),
             };
 
-            var context = new JsonReaderContext(ClassLookup.CreateDefault());
+            var context = new JsonReaderContext(ClassLookup.CreateDefault().WithType(typeof(ObjectWrapperEntity<IEntity>)));
 
             var list = new List<List<IEntity>>()
             {

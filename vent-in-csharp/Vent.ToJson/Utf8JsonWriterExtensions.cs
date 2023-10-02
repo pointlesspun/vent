@@ -136,7 +136,7 @@ namespace Vent.ToJson
                 return (dateTime) => ((DateTime)dateTime).Ticks.ToString();
             }
 
-            throw new NotImplementedException($"Cannot convert key from {keyType.Name}");
+            throw new NotImplementedException($"Cannot convert dictionary key from {keyType.Name}.");
         }
 
         public static bool IsValidDictionaryKey(Type keyType)

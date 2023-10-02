@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Vent.ToJson
@@ -40,7 +41,14 @@ namespace Vent.ToJson
 
         public static object CreateInstance(this string className, Dictionary<string, Type> classLookup)
         {
-            return ParseVentClassName(className).CreateInstance(classLookup);
+            var typeNode = ParseVentClassName(className);
+
+            if (classLookup.ContainsKey(className))
+            {
+                return typeNode.CreateInstance(classLookup);
+            }
+
+            throw new NotImplementedException($"Cannot instantiate entity with a null {className}");
         }
 
 

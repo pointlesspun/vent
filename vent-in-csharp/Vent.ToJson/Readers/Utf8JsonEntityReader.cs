@@ -1,9 +1,37 @@
-﻿using System.Text.Json;
+﻿using System.Text;
+using System.Text.Json;
 
 namespace Vent.ToJson.Readers
 {
     public static class Utf8JsonEntityReader
     {
+        public static T ReadEntityFromJson<T>(
+            string jsonText,
+            JsonReaderContext context = null,
+            EntitySerialization entitySerialization = EntitySerialization.AsReference
+        )
+        {
+            var objectReader = new Utf8JsonReader(Encoding.UTF8.GetBytes(jsonText));
+            return ReadEntity<T>(ref objectReader, context, entitySerialization);
+        }
+
+        public static T ReadEntity<T>(
+            this ref Utf8JsonReader reader,
+            JsonReaderContext context = null,
+            EntitySerialization entitySerialization = EntitySerialization.AsReference
+        )
+        {
+            // create a new context if none was provided
+            context ??= new JsonReaderContext(new EntityRegistry(), ClassLookup.CreateDefault());
+
+            if (reader.TokenType == JsonTokenType.None)
+            {
+                reader.Read();
+            }
+
+            return (T)ReadEntity(ref reader, context, entitySerialization);
+        }
+
         public static object ReadEntity(this ref Utf8JsonReader reader,
             JsonReaderContext context,
             EntitySerialization entitySerialization = EntitySerialization.AsReference)
@@ -25,7 +53,7 @@ namespace Vent.ToJson.Readers
             {
                 reader.ReadPropertyName(SharedJsonTags.EntityTypeTag);
 
-                var entity = (IEntity)CreateInstanceFromTypeName(ref reader, context.ClassLookup);
+                var entity = (IEntity)reader.ReadString().CreateInstance(context.ClassLookup);
 
                 if (entity is EntityRegistry registry)
                 {
@@ -50,20 +78,6 @@ namespace Vent.ToJson.Readers
             }
 
             throw new NotImplementedException($"Cannot parse {reader.TokenType} to an serialization of an entity");
-        }
-
-        private static object CreateInstanceFromTypeName(ref Utf8JsonReader reader, Dictionary<string, Type> classLookup)
-        {
-            var className = reader.ReadString();
-
-            if (className != null)
-            {
-                return className.CreateInstance(classLookup);
-            }
-            else
-            {
-                throw new JsonException($"Cannot instantiate entity with a null {className}");
-            }
         }
     }
 }
