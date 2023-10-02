@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Reflection.PortableExecutable;
+using System.Text;
 using System.Text.Json;
 
 namespace Vent.ToJson.Readers
@@ -8,8 +9,19 @@ namespace Vent.ToJson.Readers
         // xxx to do test
         public static T ReadPrimitiveFromJson<T>(string jsonText)
         {
-            var objectReader = new Utf8JsonReader(Encoding.UTF8.GetBytes(jsonText));
-            return (T) ReadPrimitive(ref objectReader, typeof(T));
+            var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(jsonText));
+
+            if (reader.TokenType == JsonTokenType.None)
+            {
+                reader.Read();
+            }
+
+            if (reader.TokenType == JsonTokenType.Null)
+            {
+                throw new JsonException("cannot read a null primitive");
+            }
+
+            return (T) ReadPrimitive(ref reader, typeof(T));
         }
 
         public static T ReadPrimitive<T>(this ref Utf8JsonReader reader)
@@ -46,6 +58,5 @@ namespace Vent.ToJson.Readers
                 _ => throw new NotImplementedException($"type {type.Name} has not backing code "),
             };
         }
-
     }
 }
