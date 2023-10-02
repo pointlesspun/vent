@@ -121,7 +121,7 @@ namespace Vent.ToJson.Test
                 // the MultiPropertyTestEntity will be fully serialized as a value
                 new ObjectWrapperEntity<MultiPropertyTestEntity>(multiPropertyEntity),
                 new ObjectWrapperEntity<MultiPropertyTestEntity>()
-            }, typeof(ObjectWrapperEntity<MultiPropertyTestEntity>));
+            });
         }
 
         /// <summary>
@@ -142,9 +142,7 @@ namespace Vent.ToJson.Test
                 // this will reference multiPropertyEntity as its property is not marked 
                 // as SerializeAsValue
                 new PropertyEntity<IEntity>(multiPropertyEntity)
-            },
-            typeof(ObjectWrapperEntity<MultiPropertyTestEntity>),
-            typeof(PropertyEntity<IEntity>)
+            }
             );
         }
 
@@ -173,8 +171,7 @@ namespace Vent.ToJson.Test
                 var cloneDict = (clone[stringDictionary.Id] as ObjectEntity<Dictionary<string, string>>).Value;
 
                 AssertDictionaryValuesMatch(sourceDict, cloneDict);
-            },
-            typeof(ObjectEntity<Dictionary<string, string>>));
+            });
         }
 
         [TestMethod]
@@ -202,8 +199,7 @@ namespace Vent.ToJson.Test
                 var cloneDict = (clone[0] as ObjectEntity<Dictionary<int, int>>).Value;
 
                 AssertDictionaryValuesMatch(sourceDict, cloneDict);
-            },
-            typeof(ObjectEntity<Dictionary<int, int>>));
+            });
         }
 
         [TestMethod]
@@ -235,8 +231,7 @@ namespace Vent.ToJson.Test
                 var cloneDict = (clone[entDictionary.Id] as ObjectEntity<Dictionary<string, StringEntity>>).Value;
 
                 AssertDictionaryValuesMatch(sourceDict, cloneDict);
-            },
-            typeof(ObjectEntity<Dictionary<string, StringEntity>>));
+            });
         }
 
         [TestMethod]
@@ -269,8 +264,7 @@ namespace Vent.ToJson.Test
                 var cloneDict = (clone[entDictionary.Id] as ObjectEntity<Dictionary<string, StringEntity>>).Value;
 
                 AssertDictionaryValuesMatch(sourceDict, cloneDict);
-            },
-            typeof(ObjectWrapperEntity<Dictionary<string, StringEntity>>));
+            });
         }
 
         [TestMethod]
@@ -302,8 +296,7 @@ namespace Vent.ToJson.Test
                     var cloneList = (clone[1] as ObjectEntity<List<StringEntity>>).Value;
 
                     Assert.IsTrue(sourceList.SequenceEqual(cloneList));
-                },
-                typeof(ObjectEntity<List<StringEntity>>)
+                }
             );
         }
 
@@ -331,8 +324,7 @@ namespace Vent.ToJson.Test
                     var cloneList = (clone[0] as ObjectWrapperEntity<List<StringEntity>>).Value;
 
                     Assert.IsTrue(sourceList.SequenceEqual(cloneList));
-                },
-                typeof(ObjectWrapperEntity<List<StringEntity>>)
+                }
             );
         }
 
@@ -379,8 +371,7 @@ namespace Vent.ToJson.Test
                     new StringEntity("outer-foo"),
                     innerRegistry,
                     new StringEntity("outer-bar"),
-                },
-                typeof(ObjectEntity<IEntity>)
+                }   
             );
         }
 

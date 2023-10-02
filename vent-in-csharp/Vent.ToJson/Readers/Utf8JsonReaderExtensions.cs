@@ -53,7 +53,7 @@ namespace Vent.ToJson.Readers
             }
             else if (EntityReflection.IsPrimitiveOrString(valueType))
             {
-                return ReadPrimitive(reader, valueType);
+                return reader.ReadPrimitive(valueType);
             }
             else if (valueType.IsArray)
             {
@@ -123,46 +123,7 @@ namespace Vent.ToJson.Readers
         {
             ReadPropertyName(ref reader, propertyName);
             ReadAnyToken(ref reader);
-            return (T)ReadPrimitive(reader, typeof(T));
-        }
-
-        public static T ReadPrimitive<T>(this ref Utf8JsonReader reader)
-        {
-            ReadAnyToken(ref reader);
-            return (T) ReadPrimitive(reader, typeof(T));
-        }
-
-        public static object ReadPrimitive(Utf8JsonReader reader, Type type)
-        {
-            switch (Type.GetTypeCode(type))
-            {
-                case TypeCode.Byte:
-                    return reader.GetByte();
-                case TypeCode.Int16:
-                    return reader.GetInt16();
-                case TypeCode.Int32:
-                    return reader.GetInt32();
-                case TypeCode.Int64:
-                    return reader.GetInt64();
-                case TypeCode.UInt16:
-                    return reader.GetUInt16();
-                case TypeCode.UInt32:
-                    return reader.GetUInt32();
-                case TypeCode.UInt64:
-                    return reader.GetUInt64();
-                case TypeCode.Double:
-                    return reader.GetDouble();
-                case TypeCode.Single:
-                    return reader.GetSingle();
-                case TypeCode.String:
-                    return reader.GetString();
-                case TypeCode.Char:
-                    return reader.GetString()[0];
-                case TypeCode.Boolean:
-                    return reader.GetBoolean();
-                default:
-                    throw new NotImplementedException($"type {type.Name} has not backing code ");
-            }
+            return reader.ReadPrimitive<T>();
         }
 
         public static T ReadProperty<T>(ref Utf8JsonReader reader, string expectedPropertyName)
@@ -175,7 +136,7 @@ namespace Vent.ToJson.Readers
                     {
                         if (reader.Read())
                         {
-                            return (T)ReadPrimitive(reader, typeof(T));
+                            return reader.ReadPrimitive<T>();
                         }
                     }
                     else

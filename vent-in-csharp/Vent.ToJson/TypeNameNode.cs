@@ -46,7 +46,13 @@ namespace Vent.ToJson
 
         public object CreateInstance(Dictionary<string, Type> classLookup)
         {
-            return Activator.CreateInstance(ResolveType(classLookup));
+            var type = ResolveType(classLookup);
+            if (type != null)
+            {
+                return Activator.CreateInstance(type);
+            }
+            // xxx to do add full name
+            throw new NotImplementedException($"Cannot find type {TypeName}");
         }       
     }
 }

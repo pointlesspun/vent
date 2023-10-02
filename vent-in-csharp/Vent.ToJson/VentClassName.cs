@@ -41,14 +41,7 @@ namespace Vent.ToJson
 
         public static object CreateInstance(this string className, Dictionary<string, Type> classLookup)
         {
-            var typeNode = ParseVentClassName(className);
-
-            if (classLookup.ContainsKey(className))
-            {
-                return typeNode.CreateInstance(classLookup);
-            }
-
-            throw new NotImplementedException($"Cannot instantiate entity with a null {className}");
+            return ParseVentClassName(className).CreateInstance(classLookup);
         }
 
 
