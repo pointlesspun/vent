@@ -33,6 +33,16 @@ namespace Vent.ToJson.Readers
                 reader.Read();
             }
 
+            if (reader.TokenType == JsonTokenType.Null)
+            {
+                if (typeof(T).IsNullableType())
+                {
+                    return default;
+                }
+
+                throw new JsonException($"Encounted a json null token but the corresponding type {typeof(T)} is not nullable.");
+            }
+
             return (T)ReadValue(ref reader, context, typeof(T), entitySerialization);
         }
 

@@ -1,5 +1,6 @@
 ﻿using Vent.ToJson.Readers;
 using Vent.ToJson.Test.TestEntities;
+
 using static Vent.ToJson.Utf8JsonWriterExtensions;
 
 namespace Vent.ToJson.Test.Readers

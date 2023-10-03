@@ -40,6 +40,16 @@ namespace Vent
                 }
             }
         }
+
+        // https://stackoverflow.com/questions/374651/how-to-check-if-an-object-is-nullable
+        public static bool IsNullable<T>(T obj) =>
+            obj == null || IsNullableType(typeof(T));
+        
+
+        // https://stackoverflow.com/questions/374651/how-to-check-if-an-object-is-nullable
+        public static bool IsNullableType(this Type type) =>
+            (!type.IsValueType) || (Nullable.GetUnderlyingType(type) != null);
+        
         private static bool CanDeepCopy(PropertyInfo info, object value)
             => value != null && !IsEntityOrPrimitiveOrString(info.PropertyType);
 
