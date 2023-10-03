@@ -4,41 +4,19 @@ using System.Text.Json;
 
 namespace Vent.ToJson.Readers
 {
-    // xxx move to AbstractUtf8JsonReader, see Utf8JsonArrayReader
-    public static class Utf8JsonListReader
+    public class Utf8JsonListReader<T> : AbstractUtf8JsonReader<List<T>>
     {
-        public static List<T> ReadListFromJson<T>(
-            string jsonText,
-            JsonReaderContext context = null,
-            EntitySerialization entitySerialization = EntitySerialization.AsReference
-        )
+        public override object ReadValue(ref Utf8JsonReader reader,
+            JsonReaderContext context,
+            Type type,
+            EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {
-            var listReader = new Utf8JsonReader(Encoding.UTF8.GetBytes(jsonText));
-            return ReadList<T>(ref listReader, context, entitySerialization);
+            return Utf8JsonListReaderExtensions.ReadList(ref reader, context, typeof(T), entitySerialization);
         }
+    }
 
-        public static List<T> ReadList<T>(
-            this ref Utf8JsonReader reader,
-            JsonReaderContext context = null,
-            EntitySerialization entitySerialization = EntitySerialization.AsReference
-        )
-        {
-            // create a new context if none was provided
-            context ??= new JsonReaderContext(new EntityRegistry(), ClassLookup.CreateDefault());
-
-            if (reader.TokenType == JsonTokenType.None)
-            {
-                reader.Read();
-            }
-
-            if (reader.TokenType == JsonTokenType.Null)
-            {
-                return null;
-            }
-
-            return (List<T>) ReadList(ref reader, context, typeof(T), entitySerialization);
-        }
-
+    public static class Utf8JsonListReaderExtensions
+    {
         public static IList ReadList(
             this ref Utf8JsonReader reader,
             JsonReaderContext context,

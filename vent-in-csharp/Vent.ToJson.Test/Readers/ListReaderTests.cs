@@ -1,5 +1,4 @@
-﻿using System.Text;
-using System.Text.Json;
+﻿using System.Text.Json;
 using Vent.PropertyEntities;
 using Vent.ToJson.Readers;
 using Vent.ToJson.Test.TestEntities;
@@ -15,10 +14,10 @@ namespace Vent.ToJson.Test.Readers
         public void NullListTest()
         {
             var listString = "null";
-            var listReader = new Utf8JsonReader(Encoding.UTF8.GetBytes(listString));
-            var listOutput = listReader.ReadList<string>();
+            var reader = new Utf8JsonListReader<string>();
+            var output = reader.ReadFromJson(listString);
 
-            Assert.IsTrue(listOutput == null);
+            Assert.IsTrue(output == null);
         }
 
         [TestMethod]
@@ -26,10 +25,10 @@ namespace Vent.ToJson.Test.Readers
         {
             var list = new List<int>() { 1, 2, 3 };
             var listString = $"[{string.Join(",", list)}]";
-            var listReader = new Utf8JsonReader(Encoding.UTF8.GetBytes(listString));
-            var listOutput = listReader.ReadList<int>();
+            var reader = new Utf8JsonListReader<int>();
+            var output = reader.ReadFromJson(listString);
 
-            Assert.IsTrue(list.SequenceEqual(listOutput));
+            Assert.IsTrue(list.SequenceEqual(output));
         }
 
         [TestMethod]
@@ -37,10 +36,10 @@ namespace Vent.ToJson.Test.Readers
         {
             var list = new List<string>() { "foo", "bar", "qaz" };
             var listString = $"[{string.Join(",", list.Select(str => $"\"{str}\""))}]";
-            var listReader = new Utf8JsonReader(Encoding.UTF8.GetBytes(listString));
-            var listOutput = listReader.ReadList<string>();
+            var reader = new Utf8JsonListReader<string>();
+            var output = reader.ReadFromJson(listString);
 
-            Assert.IsTrue(list.SequenceEqual(listOutput));
+            Assert.IsTrue(list.SequenceEqual(output));
         }
 
         [TestMethod]
@@ -48,10 +47,10 @@ namespace Vent.ToJson.Test.Readers
         {
             var list = new List<bool>() { true, false };
             var listString = $"[{string.Join(",", list.Select(b => b.ToString().ToLower()))}]";
-            var listReader = new Utf8JsonReader(Encoding.UTF8.GetBytes(listString));
-            var listOutput = listReader.ReadList<bool>();
+            var reader = new Utf8JsonListReader<bool>();
+            var output = reader.ReadFromJson(listString);
 
-            Assert.IsTrue(list.SequenceEqual(listOutput));
+            Assert.IsTrue(list.SequenceEqual(output));
         }
 
         [TestMethod]
@@ -64,12 +63,12 @@ namespace Vent.ToJson.Test.Readers
                 new List<int> { 6, 7, 8 }
             };
             var listString = JsonSerializer.Serialize(list);
-            var listReader = new Utf8JsonReader(Encoding.UTF8.GetBytes(listString));
-            var listOutput = listReader.ReadList<List<int>>();
+            var reader = new Utf8JsonListReader<List<int>>();
+            var output = reader.ReadFromJson(listString);
 
             for (var i = 0; i < list.Count; i++)
             {
-                Assert.IsTrue(list[i].SequenceEqual(listOutput[i]));
+                Assert.IsTrue(list[i].SequenceEqual(output[i]));
             }
         }
 
@@ -85,10 +84,10 @@ namespace Vent.ToJson.Test.Readers
                 new MultiPropertyTestObject(true, "foo", 'c', -3, 2, -0.42f, 0.042),
             };
             var listString = JsonSerializer.Serialize(list);
-            var listReader = new Utf8JsonReader(Encoding.UTF8.GetBytes(listString));
-            var listOutput = listReader.ReadList<MultiPropertyTestObject>(entitySerialization: EntitySerialization.AsValue);
+            var reader = new Utf8JsonListReader<MultiPropertyTestObject>();
+            var output = reader.ReadFromJson(listString);
 
-            Assert.IsTrue(list.SequenceEqual(listOutput));
+            Assert.IsTrue(list.SequenceEqual(output));
         }
 
         [TestMethod]
@@ -115,9 +114,10 @@ namespace Vent.ToJson.Test.Readers
             };
 
             var listString = WriteObjectToJsonString(list, EntitySerialization.AsValue);
-            var listOutput = Utf8JsonListReader.ReadListFromJson<IEntity>(listString, context, EntitySerialization.AsValue);
+            var reader = new Utf8JsonListReader<IEntity>();
+            var output = reader.ReadFromJson(listString, context, EntitySerialization.AsValue);
 
-            Assert.IsTrue(list.SequenceEqual(listOutput));
+            Assert.IsTrue(list.SequenceEqual(output));
         }
 
         [TestMethod]
@@ -141,9 +141,15 @@ namespace Vent.ToJson.Test.Readers
             };
 
             var listString = WriteObjectToJsonString(list, EntitySerialization.AsValue);
-            var listOutput = Utf8JsonListReader.ReadListFromJson<IEntity>(listString, context, EntitySerialization.AsValue);
+            var reader = new Utf8JsonListReader<IEntity>();
+            var output = reader.ReadFromJson(listString, context, EntitySerialization.AsValue);
 
-            Assert.IsTrue(list.SequenceEqual(listOutput));
+            Assert.IsTrue(list.SequenceEqual(output));
+            foreach (var ent in list)
+            {
+                var count = output.Count(e => ((ObjectEntity<IEntity>)e).Value == ((ObjectEntity<IEntity>)ent).Value);
+                Assert.IsTrue(count == 1);
+            }
         }
 
         [TestMethod]
@@ -178,11 +184,12 @@ namespace Vent.ToJson.Test.Readers
             };
 
             var listString = WriteObjectToJsonString(list, EntitySerialization.AsValue);
-            var listOutput = Utf8JsonListReader.ReadListFromJson<List<IEntity>>(listString, context, EntitySerialization.AsValue);
+            var reader = new Utf8JsonListReader<List<IEntity>>();
+            var output = reader.ReadFromJson(listString, context, EntitySerialization.AsValue);
 
             for (var i = 0; i < list.Count; i++)
             {
-                Assert.IsTrue(list[i].SequenceEqual(listOutput[i]));
+                Assert.IsTrue(list[i].SequenceEqual(output[i]));
             }
         }
     }
