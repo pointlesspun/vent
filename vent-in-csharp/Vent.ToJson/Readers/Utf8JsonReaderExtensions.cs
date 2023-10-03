@@ -60,7 +60,7 @@ namespace Vent.ToJson.Readers
             }
             else if (valueType == typeof(DateTime))
             {
-                return ReadDateTime(ref reader);
+                return reader.ReadDateTime();
             }
             else if (typeof(IEnumerable).IsAssignableFrom(valueType) && valueType.IsGenericType)
             {
@@ -83,28 +83,6 @@ namespace Vent.ToJson.Readers
 
         
 
-        /// <summary>
-        /// Read the date time from the current token in the reader. If the token
-        /// is a number, it will be assumed to represent ticks and the date time
-        /// returned will be based on these ticks. Otherwise DateTime.Parse
-        /// will be used.
-        /// </summary>
-        /// <param name="reader"></param>
-        /// <returns></returns>
-        public static DateTime ReadDateTime(this ref Utf8JsonReader reader)
-        {
-            if (reader.TokenType == JsonTokenType.Number)
-            {
-                // parse the datetime as if it were ticks
-                return new DateTime(reader.GetInt64());
-            }
-            else if (reader.TokenType == JsonTokenType.String)
-            {
-                return DateTime.Parse(reader.GetString());
-            }
-            
-            throw new JsonException($"JsonReader can't covert {reader.TokenType} to a DateTime.");
-        }
 
 
         public static T ReadPrimitiveProperty<T>(this ref Utf8JsonReader reader, string propertyName)

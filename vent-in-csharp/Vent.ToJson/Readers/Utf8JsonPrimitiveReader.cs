@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace Vent.ToJson.Readers
 {
-    public static class Utf8JsonPrimitiveReader 
+    public static class Utf8JsonPrimitiveReader
     {
         public static T ReadPrimitiveFromJson<T>(string jsonText)
         {
