@@ -5,6 +5,9 @@ using static Vent.ToJson.Utf8JsonWriterExtensions;
 
 namespace Vent.ToJson.Test.Readers
 {
+
+   
+
     [TestClass]
     public class EntityReaderTests
     {
@@ -88,5 +91,35 @@ namespace Vent.ToJson.Test.Readers
             Assert.IsTrue(output.EntityId == 0);
             Assert.IsTrue(output.Registry == unloadedRegistry);
         }
+
+        private struct TestStruct
+        {
+            public int Id { get; set; }
+
+            public string Name { get; set; }
+        }
+
+
+        [TestMethod]
+        public void StructReadTest()
+        {
+
+            var structObject = new PropertyEntity<TestStruct>(new TestStruct()
+            {
+                Id = 42,
+                Name = "foo"
+            });
+
+            var context = new JsonReaderContext(ClassLookup.CreateDefault().WithType(typeof(TestStruct)));
+
+            var entityString = WriteObjectToJsonString(structObject, EntitySerialization.AsValue);
+            var reader = new Utf8JsonEntityReader();
+            var output = (PropertyEntity<TestStruct>)reader.ReadFromJson(entityString, context, EntitySerialization.AsValue);
+
+            Assert.IsTrue(output.Value.Id == 42);
+            Assert.IsTrue(output.Value.Name == "foo");
+
+        }
     }
 }
+
