@@ -3,34 +3,21 @@ using System.Text.Json;
 
 namespace Vent.ToJson.Readers
 {
-    // xxx move to AbstractUtf8JsonReader, see Utf8JsonArrayReader
-    public static class Utf8JsonObjectReader
+    public class Utf8JsonObjectReader<T> : AbstractUtf8JsonReader<T>
     {
-        public static T ReadObjectFromJson<T>(
-            string jsonText,
-            JsonReaderContext context = null
-        )
+        public override object ReadValue(ref Utf8JsonReader reader,
+            JsonReaderContext context,
+            Type type,
+            EntitySerialization _)
         {
-            var objectReader = new Utf8JsonReader(Encoding.UTF8.GetBytes(jsonText));
-            return ReadObject<T>(ref objectReader, context);
+            return Utf8JsonObjectReaderExtensions.ReadObject(ref reader, context, typeof(T));
         }
+    }
 
-        public static T ReadObject<T>(
-            this ref Utf8JsonReader reader,
-            JsonReaderContext context = null
-        )
-        {
-            // create a new context if none was provided
-            context ??= new JsonReaderContext(new EntityRegistry(), ClassLookup.CreateDefault());
 
-            if (reader.TokenType == JsonTokenType.None)
-            {
-                reader.Read();
-            }
-
-            return (T)ReadObject(ref reader, context, typeof(T));
-        }
-
+    public static class Utf8JsonObjectReaderExtensions
+    {
+        
         /// <summary>
         /// </summary>
         /// <param name="reader"></param>
