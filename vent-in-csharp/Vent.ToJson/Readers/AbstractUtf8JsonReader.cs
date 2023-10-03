@@ -16,15 +16,7 @@ namespace Vent.ToJson.Readers
         )
         {
             var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(jsonText));
-            return (T)ReadValue(ref reader, context, entitySerialization);
-        }
 
-        public T ReadValue(
-            ref Utf8JsonReader reader,
-            JsonReaderContext context = null,
-            EntitySerialization entitySerialization = EntitySerialization.AsReference
-        )
-        {
             // create a new context if none was provided
             context ??= new JsonReaderContext(new EntityRegistry(), ClassLookup.CreateDefault());
 
@@ -43,12 +35,11 @@ namespace Vent.ToJson.Readers
                 throw new JsonException($"Encounted a json null token but the corresponding type {typeof(T)} is not nullable.");
             }
 
-            return (T)ReadValue(ref reader, context, typeof(T), entitySerialization);
+            return (T) ReadValue(ref reader, context, entitySerialization);
         }
 
         public abstract object ReadValue(ref Utf8JsonReader reader,
             JsonReaderContext context,
-            Type type,
             EntitySerialization entitySerialization = EntitySerialization.AsReference);
     }
 }

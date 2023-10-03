@@ -7,13 +7,11 @@ namespace Vent.ToJson.Readers
     {
         public override object ReadValue(ref Utf8JsonReader reader,
             JsonReaderContext context,
-            Type type,
             EntitySerialization _)
         {
             return Utf8JsonObjectReaderExtensions.ReadObject(ref reader, context, typeof(T));
         }
     }
-
 
     public static class Utf8JsonObjectReaderExtensions
     {

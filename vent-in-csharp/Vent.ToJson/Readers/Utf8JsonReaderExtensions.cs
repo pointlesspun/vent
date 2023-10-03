@@ -111,7 +111,7 @@ namespace Vent.ToJson.Readers
         {
             ReadPropertyName(ref reader, propertyName);
             ReadAnyToken(ref reader);
-            return reader.ReadPrimitive<T>();
+            return (T) reader.ReadPrimitive(typeof(T));
         }
 
         public static T ReadProperty<T>(ref Utf8JsonReader reader, string expectedPropertyName)
@@ -124,7 +124,7 @@ namespace Vent.ToJson.Readers
                     {
                         if (reader.Read())
                         {
-                            return reader.ReadPrimitive<T>();
+                            return (T)reader.ReadPrimitive(typeof(T));
                         }
                     }
                     else

@@ -1,5 +1,6 @@
 ﻿
 using System.Text.Json;
+using Vent.ToJson.Readers;
 using static Vent.ToJson.Readers.Utf8JsonPrimitiveReader;
 
 namespace Vent.ToJson.Test.Readers
@@ -31,7 +32,7 @@ namespace Vent.ToJson.Test.Readers
         [ExpectedException(typeof(JsonException))]
         public void NullIsNotAPrimitiveTest()
         {
-            Assert.IsTrue(ReadPrimitiveFromJson<string>("null") == "null");
+            Assert.IsTrue(ReadPrimitiveFromJson<int>("null") == 0);
         }
     }
 }

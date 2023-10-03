@@ -6,10 +6,9 @@ namespace Vent.ToJson.Readers
     {
         public override object ReadValue(ref Utf8JsonReader reader,
             JsonReaderContext context,
-            Type type,
             EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {
-            return Utf8JsonArrayReaderExtensions.ReadArray(ref reader, context, type, entitySerialization); 
+            return Utf8JsonArrayReaderExtensions.ReadArray(ref reader, context, typeof(T[]), entitySerialization); 
         }
     }
 
