@@ -1,12 +1,11 @@
-﻿using System.Reflection.PortableExecutable;
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 
 namespace Vent.ToJson.Readers
 {
     public static class Utf8JsonPrimitiveReader
     {
-        // xxx to do test
+
         public static T ReadPrimitiveFromJson<T>(string jsonText)
         {
             var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(jsonText));

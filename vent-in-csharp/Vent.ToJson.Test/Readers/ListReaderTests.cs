@@ -6,7 +6,7 @@ using Vent.ToJson.Test.TestEntities;
 
 using static Vent.ToJson.Utf8JsonWriterExtensions;
 
-namespace Vent.ToJson.Test
+namespace Vent.ToJson.Test.Readers
 {
     [TestClass]
     public class ListReaderTests
@@ -57,9 +57,9 @@ namespace Vent.ToJson.Test
         [TestMethod]
         public void NestedListTest()
         {
-            var list = new List<List<int>>() 
-            { 
-                new List<int> { 1, 2, 3 }, 
+            var list = new List<List<int>>()
+            {
+                new List<int> { 1, 2, 3 },
                 new List<int> { 3, 4, 5 },
                 new List<int> { 6, 7, 8 }
             };
@@ -88,7 +88,7 @@ namespace Vent.ToJson.Test
             var listReader = new Utf8JsonReader(Encoding.UTF8.GetBytes(listString));
             var listOutput = listReader.ReadList<MultiPropertyTestObject>(entitySerialization: EntitySerialization.AsValue);
 
-            Assert.IsTrue(list.SequenceEqual(listOutput));  
+            Assert.IsTrue(list.SequenceEqual(listOutput));
         }
 
         [TestMethod]
@@ -100,7 +100,7 @@ namespace Vent.ToJson.Test
                     new StringEntity("foo"),
                     new StringEntity("bar"),
                     new StringEntity("qad"),
-                }, 
+                },
                 ClassLookup.CreateDefault()
                     .WithType(typeof(ObjectWrapperEntity<IEntity>))
             );
@@ -116,7 +116,7 @@ namespace Vent.ToJson.Test
 
             var listString = WriteObjectToJsonString(list, EntitySerialization.AsValue);
             var listOutput = Utf8JsonListReader.ReadListFromJson<IEntity>(listString, context, EntitySerialization.AsValue);
-            
+
             Assert.IsTrue(list.SequenceEqual(listOutput));
         }
 
@@ -184,6 +184,6 @@ namespace Vent.ToJson.Test
             {
                 Assert.IsTrue(list[i].SequenceEqual(listOutput[i]));
             }
-        }       
+        }
     }
 }

@@ -3,7 +3,7 @@
 using static Vent.ToJson.Utf8JsonWriterExtensions;
 using static Vent.ToJson.Readers.Utf8JsonObjectReader;
 
-namespace Vent.ToJson.Test
+namespace Vent.ToJson.Test.Readers
 {
     [TestClass]
     public class ObjectReaderTests
@@ -11,7 +11,7 @@ namespace Vent.ToJson.Test
         [TestMethod]
         public void ReadNullObjectTest()
         {
-            var testObject = (MultiPropertyTestObject) null;
+            var testObject = (MultiPropertyTestObject)null;
             var testString = WriteObjectToJsonString(testObject, EntitySerialization.AsValue);
             var objectOutput = ReadObjectFromJson<MultiPropertyTestObject>(testString);
 
@@ -24,7 +24,7 @@ namespace Vent.ToJson.Test
         {
             var testObject = new MultiPropertyTestObject(true, "foo", 'c', -3, 2, -0.42f, 0.042);
             var testString = WriteObjectToJsonString(testObject, EntitySerialization.AsValue);
-            var objectOutput = ReadObjectFromJson< MultiPropertyTestObject>(testString);
+            var objectOutput = ReadObjectFromJson<MultiPropertyTestObject>(testString);
 
             Assert.IsTrue(testObject.Equals(objectOutput));
         }
@@ -49,12 +49,12 @@ namespace Vent.ToJson.Test
                 Item1 = new MultiPropertyTestObject(true, "foo", 'c', -3, 2, -0.42f, 0.042),
                 Item2 = 42
             };
-                
+
             var testString = WriteObjectToJsonString(testObject, EntitySerialization.AsValue);
             var objectOutput = ReadObjectFromJson<TupleObject<MultiPropertyTestObject, int>>(testString);
 
             Assert.IsTrue(objectOutput.Item1.Equals(testObject.Item1));
-            Assert.IsTrue(objectOutput.Item2  == testObject.Item2);
+            Assert.IsTrue(objectOutput.Item2 == testObject.Item2);
         }
 
         // xxx test with tuple <list, dict>

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Text.Json;
 
 namespace Vent.ToJson.Readers
@@ -57,7 +56,7 @@ namespace Vent.ToJson.Readers
             }
             else if (valueType.IsArray)
             {
-                return ReadArray(ref reader, context, valueType, entitySerialization);
+                return reader.ReadArray(context, valueType, entitySerialization);
             }
             else if (valueType == typeof(DateTime))
             {
@@ -82,18 +81,7 @@ namespace Vent.ToJson.Readers
             throw new NotImplementedException($"Cannot parse {valueType} to a value");
         }
 
-        public static Array ReadArray(this ref Utf8JsonReader reader, 
-            JsonReaderContext context,
-            Type valueType,
-            EntitySerialization entitySerialization = EntitySerialization.AsReference)
-        {
-            var elementType = valueType.GetElementType();
-            var list = reader.ReadList(context, elementType, entitySerialization);
-            var array = Array.CreateInstance(elementType, list.Count);
-
-            list.CopyTo(array, 0);
-            return array;
-        }
+        
 
         /// <summary>
         /// Read the date time from the current token in the reader. If the token

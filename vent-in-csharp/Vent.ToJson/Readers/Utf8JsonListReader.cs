@@ -30,6 +30,11 @@ namespace Vent.ToJson.Readers
                 reader.Read();
             }
 
+            if (reader.TokenType == JsonTokenType.Null)
+            {
+                return null;
+            }
+
             return (List<T>) ReadList(ref reader, context, typeof(T), entitySerialization);
         }
 
@@ -40,11 +45,6 @@ namespace Vent.ToJson.Readers
             EntitySerialization entitySerialization
         )
         {
-            if (reader.TokenType == JsonTokenType.Null)
-            {
-                return null;
-            }
-
             if (reader.TokenType == JsonTokenType.StartArray)
             {
                 var listValue = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(listElementType));

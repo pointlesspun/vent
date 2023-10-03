@@ -1,7 +1,7 @@
 ﻿using static Vent.ToJson.Utf8JsonWriterExtensions;
 using static Vent.ToJson.Readers.Utf8JsonDictionaryReader;
 
-namespace Vent.ToJson.Test
+namespace Vent.ToJson.Test.Readers
 {
     [TestClass]
     public class DictionaryReaderTest

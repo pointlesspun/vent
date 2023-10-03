@@ -1,13 +1,8 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
+using System.Text.Json;
 using static Vent.ToJson.Readers.Utf8JsonPrimitiveReader;
 
-namespace Vent.ToJson.Test
+namespace Vent.ToJson.Test.Readers
 {
     [TestClass]
     public class PrimitiveReaderTest

@@ -5,6 +5,8 @@ using System.Text.Json;
 
 namespace Vent.ToJson.Readers
 {
+    
+
     public static class Utf8JsonDictionaryReader
     {
         public static Dictionary<TKey, TValue> ReadDictionaryFromJson<TKey, TValue>(
@@ -18,10 +20,10 @@ namespace Vent.ToJson.Readers
         }
 
         public static Dictionary<TKey,TValue> ReadDictionary<TKey, TValue>(
-                    this ref Utf8JsonReader reader,
-                    JsonReaderContext context = null,
-                    EntitySerialization entitySerialization = EntitySerialization.AsReference
-                )
+            this ref Utf8JsonReader reader,
+            JsonReaderContext context = null,
+            EntitySerialization entitySerialization = EntitySerialization.AsReference
+        )
         {
             // create a new context if none was provided
             context ??= new JsonReaderContext(new EntityRegistry(), ClassLookup.CreateDefault());

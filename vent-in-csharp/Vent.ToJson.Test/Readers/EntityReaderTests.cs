@@ -2,7 +2,7 @@
 using static Vent.ToJson.Utf8JsonWriterExtensions;
 using static Vent.ToJson.Readers.Utf8JsonEntityReader;
 
-namespace Vent.ToJson.Test
+namespace Vent.ToJson.Test.Readers
 {
     [TestClass]
     public class EntityReaderTests
@@ -11,7 +11,7 @@ namespace Vent.ToJson.Test
         public void ReadNullEntityTest()
         {
             var entityString = WriteObjectToJsonString(null);
-            Assert.IsNull(ReadEntityFromJson<MultiPropertyTestEntity>(entityString, entitySerialization:EntitySerialization.AsReference));
+            Assert.IsNull(ReadEntityFromJson<MultiPropertyTestEntity>(entityString, entitySerialization: EntitySerialization.AsReference));
             Assert.IsNull(ReadEntityFromJson<MultiPropertyTestEntity>(entityString, entitySerialization: EntitySerialization.AsValue));
         }
 
