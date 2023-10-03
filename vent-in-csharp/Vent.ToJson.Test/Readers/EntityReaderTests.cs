@@ -1,6 +1,7 @@
-﻿using Vent.ToJson.Test.TestEntities;
+﻿using Vent.ToJson.Readers;
+using Vent.ToJson.Test.TestEntities;
+
 using static Vent.ToJson.Utf8JsonWriterExtensions;
-using static Vent.ToJson.Readers.Utf8JsonEntityReader;
 
 namespace Vent.ToJson.Test.Readers
 {
@@ -11,8 +12,10 @@ namespace Vent.ToJson.Test.Readers
         public void ReadNullEntityTest()
         {
             var entityString = WriteObjectToJsonString(null);
-            Assert.IsNull(ReadEntityFromJson<MultiPropertyTestEntity>(entityString, entitySerialization: EntitySerialization.AsReference));
-            Assert.IsNull(ReadEntityFromJson<MultiPropertyTestEntity>(entityString, entitySerialization: EntitySerialization.AsValue));
+            var reader = new Utf8JsonEntityReader();
+
+            Assert.IsNull(reader.ReadFromJson(entityString, entitySerialization: EntitySerialization.AsReference));
+            Assert.IsNull(reader.ReadFromJson(entityString, entitySerialization: EntitySerialization.AsValue));
         }
 
         [TestMethod]
@@ -25,7 +28,8 @@ namespace Vent.ToJson.Test.Readers
             var context = new JsonReaderContext(registry, ClassLookup.CreateDefault());
 
             var entityString = WriteObjectToJsonString(registry[0]);
-            var output = ReadEntityFromJson<MultiPropertyTestEntity>(entityString, context, EntitySerialization.AsReference);
+            var reader = new Utf8JsonEntityReader();
+            var output = reader.ReadFromJson(entityString, context);
 
             Assert.IsTrue(output.Equals(registry[0]));
             Assert.IsTrue(output == registry[0]);
@@ -41,7 +45,8 @@ namespace Vent.ToJson.Test.Readers
             var context = new JsonReaderContext(registry, ClassLookup.CreateDefault());
 
             var entityString = WriteObjectToJsonString(registry[0], EntitySerialization.AsValue);
-            var output = ReadEntityFromJson<MultiPropertyTestEntity>(entityString, context, EntitySerialization.AsValue);
+            var reader = new Utf8JsonEntityReader();
+            var output = reader.ReadFromJson(entityString, context, EntitySerialization.AsValue);
 
             Assert.IsTrue(output.Equals(registry[0]));
             Assert.IsTrue(output != registry[0]);
@@ -59,7 +64,8 @@ namespace Vent.ToJson.Test.Readers
             var context = new JsonReaderContext(registry, ClassLookup.CreateFrom(typeof(IEntity).Assembly));
 
             var entityString = WriteObjectToJsonString(registry[0], EntitySerialization.AsValue);
-            ReadEntityFromJson<MultiPropertyTestEntity>(entityString, context, EntitySerialization.AsValue);
+            var reader = new Utf8JsonEntityReader();
+            reader.ReadFromJson(entityString, context, EntitySerialization.AsValue);
 
             Assert.Fail();
         }
@@ -76,7 +82,8 @@ namespace Vent.ToJson.Test.Readers
             var context = new JsonReaderContext(unloadedRegistry, ClassLookup.CreateDefault());
 
             var entityString = WriteObjectToJsonString(registry[0], EntitySerialization.AsReference);
-            var output = ReadEntityFromJson<ForwardReference>(entityString, context, EntitySerialization.AsReference);
+            var reader = new Utf8JsonEntityReader();
+            var output = (ForwardReference) reader.ReadFromJson(entityString, context);
 
             Assert.IsTrue(output.EntityId == 0);
             Assert.IsTrue(output.Registry == unloadedRegistry);
