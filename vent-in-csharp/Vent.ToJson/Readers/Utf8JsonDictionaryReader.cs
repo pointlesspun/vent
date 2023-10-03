@@ -1,42 +1,21 @@
 ﻿using System.Collections;
-using System.Reflection.PortableExecutable;
-using System.Text;
 using System.Text.Json;
 
 namespace Vent.ToJson.Readers
 {
-    
-
-    public static class Utf8JsonDictionaryReader
+    public class Utf8JsonDictionaryReader<TKey, TValue> : AbstractUtf8JsonReader<Dictionary<TKey, TValue>>
     {
-        public static Dictionary<TKey, TValue> ReadDictionaryFromJson<TKey, TValue>(
-            string jsonText,
-            JsonReaderContext context = null,
-            EntitySerialization entitySerialization = EntitySerialization.AsReference
-        )
+        public override object ReadValue(ref Utf8JsonReader reader,
+            JsonReaderContext context,
+            Type type,
+            EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {
-            var listReader = new Utf8JsonReader(Encoding.UTF8.GetBytes(jsonText));
-            return ReadDictionary<TKey, TValue>(ref listReader, context, entitySerialization);
+            return Utf8JsonDictionaryReaderExtensions.ReadDictionary(ref reader, context, type, entitySerialization);
         }
-
-        public static Dictionary<TKey,TValue> ReadDictionary<TKey, TValue>(
-            this ref Utf8JsonReader reader,
-            JsonReaderContext context = null,
-            EntitySerialization entitySerialization = EntitySerialization.AsReference
-        )
-        {
-            // create a new context if none was provided
-            context ??= new JsonReaderContext(new EntityRegistry(), ClassLookup.CreateDefault());
-
-            if (reader.TokenType == JsonTokenType.None)
-            {
-                reader.Read();
-            }
-
-            return (Dictionary<TKey, TValue>) 
-                        ReadDictionary(ref reader, context, typeof(Dictionary<TKey, TValue>), entitySerialization);
-        }
-
+    }
+   
+    public static class Utf8JsonDictionaryReaderExtensions
+    {
         public static IDictionary ReadDictionary(this ref Utf8JsonReader reader,
             JsonReaderContext context,
             Type type,

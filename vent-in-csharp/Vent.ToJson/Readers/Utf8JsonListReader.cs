@@ -4,6 +4,7 @@ using System.Text.Json;
 
 namespace Vent.ToJson.Readers
 {
+    // xxx move to AbstractUtf8JsonReader, see Utf8JsonArrayReader
     public static class Utf8JsonListReader
     {
         public static List<T> ReadListFromJson<T>(

@@ -1,5 +1,6 @@
-﻿using static Vent.ToJson.Utf8JsonWriterExtensions;
-using static Vent.ToJson.Readers.Utf8JsonDictionaryReader;
+﻿using Vent.ToJson.Readers;
+
+using static Vent.ToJson.Utf8JsonWriterExtensions;
 
 namespace Vent.ToJson.Test.Readers
 {
@@ -11,7 +12,8 @@ namespace Vent.ToJson.Test.Readers
         {
             var dictionary = (Dictionary<string, string>)null;
             var dictionaryString = WriteObjectToJsonString(dictionary);
-            Assert.IsNull(ReadDictionaryFromJson<string, string>(dictionaryString));
+            var reader = new Utf8JsonDictionaryReader<string, string>();
+            Assert.IsNull(reader.ReadFromJson(dictionaryString));
         }
 
         /// <summary>
@@ -26,7 +28,8 @@ namespace Vent.ToJson.Test.Readers
                 { 1, 1 },
             };
             var dictionaryString = WriteObjectToJsonString(dictionary);
-            ReadDictionaryFromJson<IEntity, int>(dictionaryString);
+            var reader = new Utf8JsonDictionaryReader<IEntity, int>();
+            reader.ReadFromJson(dictionaryString);
         }
 
         [TestMethod]
@@ -39,7 +42,8 @@ namespace Vent.ToJson.Test.Readers
                 { -3, 3 },
             };
             var dictionaryString = WriteObjectToJsonString(dictionary);
-            var output = ReadDictionaryFromJson<int, int>(dictionaryString);
+            var reader = new Utf8JsonDictionaryReader<int, int>();
+            var output = reader.ReadFromJson(dictionaryString);
 
             foreach (var kvp in dictionary)
             {
@@ -57,7 +61,8 @@ namespace Vent.ToJson.Test.Readers
                 { "foo3", "bar3" },
             };
             var dictionaryString = WriteObjectToJsonString(dictionary);
-            var output = ReadDictionaryFromJson<string, string>(dictionaryString);
+            var reader = new Utf8JsonDictionaryReader<string, string>();
+            var output = reader.ReadFromJson(dictionaryString);
 
             foreach (var kvp in dictionary)
             {
@@ -75,7 +80,8 @@ namespace Vent.ToJson.Test.Readers
                 { new DateTime(2030, 3, 3), "baz" },
             };
             var dictionaryString = WriteObjectToJsonString(dictionary);
-            var output = ReadDictionaryFromJson<DateTime, string>(dictionaryString);
+            var reader = new Utf8JsonDictionaryReader<DateTime, string>();
+            var output = reader.ReadFromJson(dictionaryString);
 
             foreach (var kvp in dictionary)
             {
@@ -93,7 +99,8 @@ namespace Vent.ToJson.Test.Readers
                 { "baz", new Dictionary<string, string>() {{ "innerbaz-key", "baz-value" }}},
             };
             var dictionaryString = WriteObjectToJsonString(dictionary);
-            var output = ReadDictionaryFromJson<string, Dictionary<string, string>>(dictionaryString);
+            var reader = new Utf8JsonDictionaryReader<string, Dictionary<string, string>>();
+            var output = reader.ReadFromJson(dictionaryString);
 
             foreach (var kvp in dictionary)
             {
@@ -114,7 +121,8 @@ namespace Vent.ToJson.Test.Readers
                 { "baz", new List < string > () { "innerbaz-key", "baz-value" }},
             };
             var dictionaryString = WriteObjectToJsonString(dictionary);
-            var output = ReadDictionaryFromJson<string, List<string>>(dictionaryString);
+            var reader = new Utf8JsonDictionaryReader<string, List<string>>();
+            var output = reader.ReadFromJson(dictionaryString);
 
             foreach (var kvp in dictionary)
             {
