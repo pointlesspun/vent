@@ -1,4 +1,5 @@
-﻿using Vent.ToJson.Readers;
+﻿using Vent.PropertyEntities;
+using Vent.ToJson.Readers;
 using Vent.ToJson.Test.TestEntities;
 
 using static Vent.ToJson.Utf8JsonWriterExtensions;
@@ -42,6 +43,25 @@ namespace Vent.ToJson.Test.Readers
 
             Assert.IsTrue(output.Equals(registry[0]));
             Assert.IsTrue(output == registry[0]);
+        }
+
+        /// <summary>
+        /// Serialize an entity with a reference to its own registry. Test if 
+        /// the registry is correctly restored (by reference).
+        /// </summary>
+        [TestMethod]
+        public void ReadEntityRegistryAsPropertyTest()
+        {
+            var registry = new EntityRegistry();
+            var ent = registry.Add(new ObjectEntity<EntityRegistry>(registry));
+            var context = new JsonReaderContext(registry, ClassLookup.CreateDefault());
+
+            // ent needs to be serialized as value, the registry property of ent should be serialized by reference
+            var entityString = WriteObjectToJsonString(ent, EntitySerialization.AsValue);
+            var reader = new Utf8JsonEntityReader();
+            var output = (ObjectEntity<EntityRegistry>) reader.ReadFromJson(entityString, context, EntitySerialization.AsValue);
+
+            Assert.IsTrue(output.Value == registry);
         }
 
         [TestMethod]

@@ -81,10 +81,6 @@ namespace Vent.ToJson.Readers
             throw new NotImplementedException($"Cannot parse {valueType} to a value");
         }
 
-        
-
-
-
         public static T ReadPrimitiveProperty<T>(this ref Utf8JsonReader reader, string propertyName)
         {
             ReadPropertyName(ref reader, propertyName);
