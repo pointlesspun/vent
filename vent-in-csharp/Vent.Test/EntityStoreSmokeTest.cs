@@ -140,9 +140,12 @@ namespace Vent.Test
                             {
                                 for (var insertCount = 0; insertCount <  count; insertCount++)
                                 {
-                                    var store = RepeatUndoRedoInsertTest(iterations, entityCount, maxMutations, undo, redo, insertCount, spool: true);
+                                    RepeatUndoRedoInsertTest(iterations, entityCount, maxMutations, undo, redo, insertCount, spool: true);
 
-                                    /*if (entityCount > 3 && maxMutations > 3 && undo > 2 && redo == 0 && iterations >= 2 && insertCount > 0)
+                                    // for debugging
+                                    /*
+                                    var store = RepeatUndoRedoInsertTest(iterations, entityCount, maxMutations, undo, redo, insertCount, spool: true);
+                                    if (entityCount > 3 && maxMutations > 3 && undo > 2 && redo == 0 && iterations >= 2 && insertCount > 0)
                                     {
                                         //Debug.WriteLine(store.ToStateString());
                                     }*/
@@ -162,11 +165,15 @@ namespace Vent.Test
             bool deleteOutOfScopeVersions = false,
             int maxEntitySlots = int.MaxValue)
         {
-            var store = new EntityHistory(new EntityRegistry())
+            var registry = new EntityRegistry()
+            {
+                MaxEntitySlots = maxEntitySlots
+            };
+
+            var store = new EntityHistory(registry)
             {
                 MaxMutations = maxMutations,
                 DeleteOutOfScopeVersions =  deleteOutOfScopeVersions,
-                MaxEntitySlots = maxEntitySlots
             };
 
             var rng = new Random(seed);
@@ -191,7 +198,7 @@ namespace Vent.Test
                 Debug.WriteLine("Spool store... closing open groups");
                 while (store.OpenGroupCount > 0)
                 {
-                    if (store.Registry.SlotCount >= store.MaxEntitySlots - 1)
+                    if (store.Registry.SlotCount >= store.Registry.MaxEntitySlots - 1)
                     {
                         store.DeleteMutation(0);
                     }
@@ -256,23 +263,5 @@ namespace Vent.Test
 
             return store;
         }
-
-        
-
-        /*private Func<EntityStore, SmokeTestAction> CreateActionSelectionFunction(Random rng, Action<string> logFunction = null)
-        {
-            var actions = CreateDefaultActionSet(rng, logFunction);
-            return CreateActionSelectionFunction(rng, actions, actions[^1].UpperBound);
-        }
-
-        private static Func<EntityStore, SmokeTestAction> CreateActionSelectionFunction(
-            Random rng, SmokeTestAction[] actions, int maxUpperBound) =>
-            new((store) =>
-            {
-                var roll = rng.Next(0, maxUpperBound);
-                return actions.First(tuple => roll <= tuple.UpperBound);
-            });*/
-
-
     }
 }

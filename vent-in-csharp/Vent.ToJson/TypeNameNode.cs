@@ -4,7 +4,7 @@ namespace Vent.ToJson
     public class TypeNameNode
     {
         public static void ResolveForwardReferences(
-            Dictionary<object, List<ForwardReference>> forwardReferences)
+            Dictionary<object, List<ForwardEntityReference>> forwardReferences)
         {
             foreach (var forwardReferenceList in forwardReferences)
             {

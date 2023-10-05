@@ -47,7 +47,7 @@ namespace Vent.ToJson.Readers
 
         private static void AddValueToList(JsonReaderContext context, IList list, object value)
         {
-            if (value is ForwardReference forwardReference)
+            if (value is ForwardEntityReference forwardReference)
             {
                 forwardReference.Key = list.Count;
                 context.Top.AddReference(list, forwardReference);

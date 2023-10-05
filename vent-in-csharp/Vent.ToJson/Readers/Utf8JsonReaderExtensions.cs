@@ -48,7 +48,7 @@ namespace Vent.ToJson.Readers
             }
             else if (EntityReflection.IsEntity(valueType))
             {
-                return reader.ReadEntity(context, entitySerialization);
+                return reader.ReadEntity(context, valueType, entitySerialization);
             }
             else if (EntityReflection.IsPrimitiveOrString(valueType))
             {

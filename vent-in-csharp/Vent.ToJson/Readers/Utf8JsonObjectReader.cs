@@ -88,7 +88,7 @@ namespace Vent.ToJson.Readers
                     {
                         var value = reader.ReadVentValue(info.PropertyType, context, info.GetEntitySerialization());
 
-                        if (value is ForwardReference reference)
+                        if (value is ForwardEntityReference reference)
                         {
                             reference.Key = info;
                             context.Top.AddReference(obj, reference);

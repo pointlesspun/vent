@@ -24,7 +24,9 @@ namespace Vent.ToJson
             return (EntityRegistry) reader.ReadEntity(new JsonReaderContext()
             {
                 ClassLookup = _classLookup
-            }, EntitySerialization.AsValue);
+            }, 
+            typeof(EntityRegistry),
+            EntitySerialization.AsValue);
         }
     
         public override void Write(Utf8JsonWriter writer, EntityRegistry registry, JsonSerializerOptions options)

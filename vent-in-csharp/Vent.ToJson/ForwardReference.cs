@@ -3,7 +3,15 @@ using System.Reflection;
 
 namespace Vent.ToJson
 {
-    public class ForwardReference
+    /// <summary>
+    /// Reference to an entity which is may not be present in the owning Registry yet.
+    /// Entities may have properties referring to other entities. The deserialization 
+    /// used in Vent.ToJson employs forward deserialization which means entity reference
+    /// may point to entities which have not been deserialized yet. If this happens
+    /// during deserialization this ForwardEntityReference will be created as a placeholder.
+    /// After deserialization completes all references will be resolved. 
+    /// </summary>
+    public class ForwardEntityReference : EntityBase
     {
         public EntityRegistry Registry { get; set; }
 
@@ -11,17 +19,17 @@ namespace Vent.ToJson
 
         public object Key { get; set; }
 
-        public ForwardReference()
+        public ForwardEntityReference()
         {
         }
 
-        public ForwardReference(EntityRegistry registry, int entityKey)
+        public ForwardEntityReference(EntityRegistry registry, int entityKey)
         {
             Registry = registry;
             EntityId  = entityKey;
         }
 
-        public ForwardReference(EntityRegistry registry, int entityKey, object key)
+        public ForwardEntityReference(EntityRegistry registry, int entityKey, object key)
         {
             Registry = registry;
             EntityId = entityKey;

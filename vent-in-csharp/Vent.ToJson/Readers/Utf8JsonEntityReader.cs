@@ -2,20 +2,21 @@
 
 namespace Vent.ToJson.Readers
 {
-    public class Utf8JsonEntityReader : AbstractUtf8JsonReader<object> 
+    public class Utf8JsonEntityReader : AbstractUtf8JsonReader<IEntity>
     {
         public override object ReadValue(ref Utf8JsonReader reader,
             JsonReaderContext context,
             EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {
-            return Utf8JsonEntityReaderExtensions.ReadEntity(ref reader, context, entitySerialization);
+            return Utf8JsonEntityReaderExtensions.ReadEntity(ref reader, context, typeof(IEntity), entitySerialization);
         }
     }
 
     public static class Utf8JsonEntityReaderExtensions
     {
-        public static object ReadEntity(this ref Utf8JsonReader reader,
+        public static IEntity ReadEntity(this ref Utf8JsonReader reader,
             JsonReaderContext context,
+            Type entityType,
             EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {
             if (reader.TokenType == JsonTokenType.Null)
@@ -25,11 +26,24 @@ namespace Vent.ToJson.Readers
 
             if (entitySerialization == EntitySerialization.AsReference)
             {
-                var key = reader.GetInt32();
+                if (typeof(EntityRegistry).IsAssignableFrom(entityType))
+                {
+                    // entities can only refer to their own registry
+                    return context.TopRegistry;
+                }
+                else
+                {
+                    var key = reader.GetInt32();
 
-                return context.TopRegistry.ContainsKey(key)
-                        ? context.TopRegistry[key]
-                        : new ForwardReference(context.TopRegistry, key);
+                    if (key == -1)
+                    {
+                        return null;
+                    }
+
+                    return context.TopRegistry.ContainsKey(key)
+                            ? context.TopRegistry[key]
+                            : new ForwardEntityReference(context.TopRegistry, key);
+                }
             }
             else if (reader.TokenType == JsonTokenType.StartObject)
             {

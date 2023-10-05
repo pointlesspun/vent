@@ -62,6 +62,15 @@ namespace Vent
             }
         }
 
+        public EntityRegistry()
+        { 
+        }
+
+        public EntityRegistry(int maxSlots)
+        {
+            MaxEntitySlots = maxSlots;
+        }
+
         /// <summary>
         /// Adds an entity and assigns it to a slot, changing its id.
         /// </summary>

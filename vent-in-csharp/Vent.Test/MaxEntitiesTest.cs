@@ -9,13 +9,15 @@ namespace Vent.Test
         [TestMethod]
         public void SmallSetWithRegisteredEntitiesOnly()
         {
-            var registry = new EntityRegistry();
-            var store = new EntityHistory(registry)
+            var registry = new EntityRegistry()
             {
                 MaxEntitySlots = 3
             };
 
-            while (registry.SlotCount < store.MaxEntitySlots)
+            var store = new EntityHistory(registry);
+            
+
+            while (registry.SlotCount < registry.MaxEntitySlots)
             {
                 registry.Add(new PropertyEntity<string>("foo"));
             }
@@ -45,18 +47,15 @@ namespace Vent.Test
         [ExpectedException(typeof(InvalidOperationException))]
         public void DeregisterComittedEntityTest()
         {
-            var registry = new EntityRegistry();
-            var store = new EntityHistory(registry)
-            {
-                MaxEntitySlots = 6
-            };
+            var registry = new EntityRegistry(maxSlots: 6);
+            var history = new EntityHistory(registry);
 
-            var ent = store.Commit(new PropertyEntity<string>("foo"));
+            var ent = history.Commit(new PropertyEntity<string>("foo"));
 
             Assert.IsTrue(registry.SlotCount == 4);
             Assert.IsTrue(registry.EntitiesInScope == 4);
 
-            store.Deregister(ent);
+            history.Deregister(ent);
 
             // should contain 2 mutations, 1 version info and 2 versions and 1 slot in reserve
             Assert.IsTrue(registry.SlotCount == 6);

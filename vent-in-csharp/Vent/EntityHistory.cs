@@ -10,8 +10,11 @@ namespace Vent
     /// Entities may have version information associated with them which allows moving the global
     /// application state back in time (undo) or vice versa (redo).
     /// </summary>
-    public class EntityHistory 
+    public class EntityHistory : EntityBase
     {
+        /// <summary>
+        /// Registry containing all entities including this history
+        /// </summary>
         public EntityRegistry Registry
         {
             get;
@@ -23,7 +26,9 @@ namespace Vent
         /// </summary>
         private readonly Dictionary<int, VersionInfo> _entityVersionInfo = new();
         
-
+        /// <summary>
+        /// Ordered list of all mutations in this history
+        /// </summary>
         private readonly List<IMutation> _mutations = new();
 
         private int _currentMutation = 0;
@@ -60,12 +65,6 @@ namespace Vent
             get;
             set;
         } = 10;
-
-        public int MaxEntitySlots
-        {
-            get => Registry.MaxEntitySlots;
-            set => Registry.MaxEntitySlots = value;
-        }
 
         /// <summary>
         /// Returns the Nth mutation applied to this store
@@ -104,32 +103,7 @@ namespace Vent
             Registry = registry;
         }
        
-        public void RestoreSettings(int id, int currentMutation, int openGroupCount)
-        {
-            Contract.Requires<ArgumentException>(id >= 0 && id < MaxEntitySlots, $"cannot set an id ({id}) outside the valid id range ( 0..{MaxEntitySlots})");
-
-            Registry.NextEntityId = id;
-            _currentMutation = currentMutation;
-            OpenGroupCount = openGroupCount;
-        }
-
-        public void RestoreTransientProperties()
-        {
-            _mutations.Clear();
-            _mutations.AddRange(Registry.GetEntitiesOf<IMutation>()
-                            .OrderBy(m => m.TimeStamp).ToList());
-
-            _entityVersionInfo.Clear();
-
-            var versionInfoCollection = Registry.GetEntitiesOf<VersionInfo>().ToList();
-
-            foreach (var versionInfo in versionInfoCollection) 
-            {
-                _entityVersionInfo[versionInfo.HeadId] = versionInfo;
-            }
-        }
-
-
+        
         /// <summary>
         /// Deregisters the given entity and sets the id to -1. 
         /// If the entity has version information

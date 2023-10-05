@@ -5,9 +5,6 @@ using static Vent.ToJson.Utf8JsonWriterExtensions;
 
 namespace Vent.ToJson.Test.Readers
 {
-
-   
-
     [TestClass]
     public class EntityReaderTests
     {
@@ -20,6 +17,15 @@ namespace Vent.ToJson.Test.Readers
             Assert.IsNull(reader.ReadFromJson(entityString, entitySerialization: EntitySerialization.AsReference));
             Assert.IsNull(reader.ReadFromJson(entityString, entitySerialization: EntitySerialization.AsValue));
         }
+
+        [TestMethod]
+        public void ReadNegativeKeyEntityTest()
+        {
+            var reader = new Utf8JsonEntityReader();
+            
+            Assert.IsNull(reader.ReadFromJson("-1", entitySerialization: EntitySerialization.AsReference));
+        }
+
 
         [TestMethod]
         public void ReadPropertyEntityAsReferenceTest()
@@ -86,7 +92,7 @@ namespace Vent.ToJson.Test.Readers
 
             var entityString = WriteObjectToJsonString(registry[0], EntitySerialization.AsReference);
             var reader = new Utf8JsonEntityReader();
-            var output = (ForwardReference) reader.ReadFromJson(entityString, context);
+            var output = (ForwardEntityReference) reader.ReadFromJson(entityString, context);
 
             Assert.IsTrue(output.EntityId == 0);
             Assert.IsTrue(output.Registry == unloadedRegistry);
@@ -103,7 +109,6 @@ namespace Vent.ToJson.Test.Readers
         [TestMethod]
         public void StructReadTest()
         {
-
             var structObject = new PropertyEntity<TestStruct>(new TestStruct()
             {
                 Id = 42,
@@ -118,7 +123,6 @@ namespace Vent.ToJson.Test.Readers
 
             Assert.IsTrue(output.Value.Id == 42);
             Assert.IsTrue(output.Value.Name == "foo");
-
         }
     }
 }

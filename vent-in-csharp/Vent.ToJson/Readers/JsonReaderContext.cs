@@ -6,7 +6,7 @@ namespace Vent.ToJson
     {
         public EntityRegistry Registry { get; set; }
 
-        public Dictionary<object, List<ForwardReference>> ForwardReferenceLookup { get; set; }
+        public Dictionary<object, List<ForwardEntityReference>> ForwardReferenceLookup { get; set; }
 
         public RegistryContext()
         {
@@ -17,13 +17,13 @@ namespace Vent.ToJson
             Registry = registry;
         }
 
-        public void AddReference(object target, ForwardReference reference)
+        public void AddReference(object target, ForwardEntityReference reference)
         {
-            ForwardReferenceLookup ??= new Dictionary<object, List<ForwardReference>>();
+            ForwardReferenceLookup ??= new Dictionary<object, List<ForwardEntityReference>>();
 
-            if (!ForwardReferenceLookup.TryGetValue(target, out List<ForwardReference> references)) 
+            if (!ForwardReferenceLookup.TryGetValue(target, out List<ForwardEntityReference> references)) 
             {
-                references = new List<ForwardReference>();
+                references = new List<ForwardEntityReference>();
                 ForwardReferenceLookup.Add(target, references);
             }
 
@@ -77,7 +77,7 @@ namespace Vent.ToJson
 
         public RegistryContext Top => RegistryStack.Top;
 
-        public Dictionary<object, List<ForwardReference>> TopLookup => RegistryStack.Top.ForwardReferenceLookup;
+        public Dictionary<object, List<ForwardEntityReference>> TopLookup => RegistryStack.Top.ForwardReferenceLookup;
 
         public JsonReaderContext() 
         {
