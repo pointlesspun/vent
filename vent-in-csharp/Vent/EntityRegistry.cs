@@ -28,6 +28,13 @@ namespace Vent
             get => _entityId;
             set => _entityId = value;
         }
+        
+        public string Version 
+        { 
+            get; 
+            set; 
+        } = "0.2";
+
 
         /// <summary>
         /// Number of entities in this store. Note this iterates over all 
@@ -261,9 +268,12 @@ namespace Vent
 
                     return false;
                 }));
+        }
 
-                    
-
+        public override int GetHashCode()
+        {
+            // we want the entity reference as hashcode
+            return base.GetHashCode();
         }
     }
 }

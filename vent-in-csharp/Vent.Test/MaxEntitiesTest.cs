@@ -14,7 +14,7 @@ namespace Vent.Test
                 MaxEntitySlots = 3
             };
 
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             
 
             while (registry.SlotCount < registry.MaxEntitySlots)
@@ -47,19 +47,19 @@ namespace Vent.Test
         [ExpectedException(typeof(InvalidOperationException))]
         public void DeregisterComittedEntityTest()
         {
-            var registry = new EntityRegistry(maxSlots: 6);
-            var history = new EntityHistory(registry);
+            var registry = new EntityRegistry(maxSlots: 7);
+            var history = new HistorySystem(registry);
 
             var ent = history.Commit(new PropertyEntity<string>("foo"));
 
-            Assert.IsTrue(registry.SlotCount == 4);
-            Assert.IsTrue(registry.EntitiesInScope == 4);
+            Assert.IsTrue(registry.SlotCount == 5);
+            Assert.IsTrue(registry.EntitiesInScope == 5);
 
             history.Deregister(ent);
 
             // should contain 2 mutations, 1 version info and 2 versions and 1 slot in reserve
-            Assert.IsTrue(registry.SlotCount == 6);
-            Assert.IsTrue(registry.EntitiesInScope == 5);
+            Assert.IsTrue(registry.SlotCount == 7);
+            Assert.IsTrue(registry.EntitiesInScope == 6);
 
             // everything is in use, this should throw an exception
             registry.Add(new PropertyEntity<string>("bar"));

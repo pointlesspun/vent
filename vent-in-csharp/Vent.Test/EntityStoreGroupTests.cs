@@ -10,7 +10,7 @@ namespace Vent.Test
         public void BeginGroupAndUndoTests()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
 
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
 
@@ -26,7 +26,8 @@ namespace Vent.Test
             Assert.IsTrue(store.CurrentMutation == 5);
             // 1 entity, 1 versioninfo, 3 versions
             // 5 mutations
-            Assert.IsTrue(registry.EntitiesInScope == 10);
+            // 1 history
+            Assert.IsTrue(registry.EntitiesInScope == 11);
 
             store.Undo();
             Assert.IsTrue(ent1.Value == "bar");
@@ -42,7 +43,7 @@ namespace Vent.Test
         [TestMethod]
         public void BeginGroupUndoAndRedoTests()
         {
-            var store = new EntityHistory(new EntityRegistry());
+            var store = new HistorySystem(new EntityRegistry());
 
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
 
@@ -77,7 +78,7 @@ namespace Vent.Test
         [TestMethod]
         public void BeginGroupUndoAndRedoInnerGroupTests()
         {
-            var store = new EntityHistory(new EntityRegistry());
+            var store = new HistorySystem(new EntityRegistry());
 
             var ent1 = store.Commit(new PropertyEntity<string>("foo1"));
             var ent2 = store.Commit(new PropertyEntity<string>("foo2"));
@@ -141,10 +142,7 @@ namespace Vent.Test
         public void ExceedMaxMutationCountTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry)
-            {
-                MaxMutations = 4
-            };
+            var store = new HistorySystem(registry, new EntityHistory(4));
 
             store.BeginMutationGroup();
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
@@ -174,10 +172,7 @@ namespace Vent.Test
         [ExpectedException(typeof(InvalidOperationException))]
         public void ExceedMaxMutationCountWithGroupTest()
         {
-            var store = new EntityHistory(new EntityRegistry())
-            {
-                MaxMutations = 3
-            };
+            var store = new HistorySystem(new EntityRegistry(), new EntityHistory(3));
 
             store.BeginMutationGroup();
             store.Commit(new PropertyEntity<string>("foo"));
@@ -194,7 +189,7 @@ namespace Vent.Test
         [ExpectedException(typeof(InvalidOperationException))]
         public void EndWithoutBeginShouldThrowExceptionTest()
         {
-            var store = new EntityHistory(new EntityRegistry());
+            var store = new HistorySystem(new EntityRegistry());
 
             store.EndMutationGroup();
         }
@@ -209,7 +204,7 @@ namespace Vent.Test
         public void RemoveFutureMutationAfterBeginGroupTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
 
             var ent1 = store.Commit(new PropertyEntity<string>("foo0"));
             var ent2 = store.Commit(new PropertyEntity<string>("bar0"));
@@ -224,7 +219,7 @@ namespace Vent.Test
             Assert.IsTrue(ent2.Value == "bar2");
             Assert.IsTrue(store.MutationCount == 6);
             Assert.IsTrue(store.CurrentMutation == 6);
-            Assert.IsTrue(registry.EntitiesInScope == 16);
+            Assert.IsTrue(registry.EntitiesInScope == 17);
 
             store.ToTail();
 
@@ -236,7 +231,7 @@ namespace Vent.Test
 
             Assert.IsTrue(store.MutationCount == 4);
             Assert.IsTrue(store.CurrentMutation == 4);
-            Assert.IsTrue(registry.EntitiesInScope == 11);
+            Assert.IsTrue(registry.EntitiesInScope == 12);
         }
 
 
@@ -245,7 +240,7 @@ namespace Vent.Test
         public void RemoveOldestGroupMutationTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
 
             var ent1 = new PropertyEntity<string>("foo");
             var ent2 = new PropertyEntity<string>("bar");
@@ -265,8 +260,8 @@ namespace Vent.Test
             Assert.IsTrue(registry.Contains(ent3));
             Assert.IsTrue(store.MutationCount == 5);
             Assert.IsTrue(store.CurrentMutation == 5);
-            Assert.IsTrue(registry.EntitiesInScope == 14);
-            Assert.IsTrue(registry.SlotCount == 14);
+            Assert.IsTrue(registry.EntitiesInScope == 15);
+            Assert.IsTrue(registry.SlotCount == 15);
 
             store.DeleteMutation(0);
 
@@ -275,30 +270,30 @@ namespace Vent.Test
             Assert.IsTrue(registry.Contains(ent3));
             Assert.IsTrue(store.MutationCount == 1);
             Assert.IsTrue(store.CurrentMutation == 1);
-            Assert.IsTrue(registry.EntitiesInScope == 4);
-            Assert.IsTrue(registry.SlotCount == 4);
+            Assert.IsTrue(registry.EntitiesInScope == 5);
+            Assert.IsTrue(registry.SlotCount == 5);
         }
 
         [TestMethod]
         public void RemoveOldestEmptyGroupMutationTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
 
             store.BeginMutationGroup();
             store.EndMutationGroup();
 
             Assert.IsTrue(store.MutationCount == 2);
             Assert.IsTrue(store.CurrentMutation == 2);
-            Assert.IsTrue(registry.EntitiesInScope == 2);
-            Assert.IsTrue(registry.SlotCount == 2);
+            Assert.IsTrue(registry.EntitiesInScope == 3);
+            Assert.IsTrue(registry.SlotCount == 3);
 
             store.DeleteMutation(0);
 
             Assert.IsTrue(store.MutationCount == 0);
             Assert.IsTrue(store.CurrentMutation == 0);
-            Assert.IsTrue(registry.EntitiesInScope == 0);
-            Assert.IsTrue(registry.SlotCount == 0);
+            Assert.IsTrue(registry.EntitiesInScope == 1);
+            Assert.IsTrue(registry.SlotCount == 1);
 
         }
 
@@ -306,35 +301,35 @@ namespace Vent.Test
         public void ShouldBeAbleToRemoveClosedGroupTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var history = new HistorySystem(registry);
 
-            store.BeginMutationGroup();
-            store.EndMutationGroup();
-            store.BeginMutationGroup();
+            history.BeginMutationGroup();
+            history.EndMutationGroup();
+            history.BeginMutationGroup();
 
-            Assert.IsFalse(store.IsGroupOpen(0));
-            Assert.IsTrue(store.IsGroupOpen(2));
+            Assert.IsFalse(history.IsGroupOpen(0));
+            Assert.IsTrue(history.IsGroupOpen(2));
 
-            Assert.IsTrue(store.MutationCount == 3);
-            Assert.IsTrue(store.CurrentMutation == 3);
-            Assert.IsTrue(registry.EntitiesInScope == 3);
-            Assert.IsTrue(registry.SlotCount == 3);
-            Assert.IsTrue(store.OpenGroupCount == 1);
+            Assert.IsTrue(history.MutationCount == 3);
+            Assert.IsTrue(history.CurrentMutation == 3);
+            Assert.IsTrue(registry.EntitiesInScope == 4);
+            Assert.IsTrue(registry.SlotCount == 4);
+            Assert.IsTrue(history.OpenGroupCount == 1);
 
-            store.DeleteMutation(0);
+            history.DeleteMutation(0);
 
-            Assert.IsTrue(store.MutationCount == 1);
-            Assert.IsTrue(store.CurrentMutation == 1);
-            Assert.IsTrue(registry.EntitiesInScope == 1);
-            Assert.IsTrue(registry.SlotCount == 1);
-            Assert.IsTrue(store.OpenGroupCount == 1);
+            Assert.IsTrue(history.MutationCount == 1);
+            Assert.IsTrue(history.CurrentMutation == 1);
+            Assert.IsTrue(registry.EntitiesInScope == 2);
+            Assert.IsTrue(registry.SlotCount == 2);
+            Assert.IsTrue(history.OpenGroupCount == 1);
         }
 
         [TestMethod]
         [ExpectedException(typeof(InvalidOperationException))]
         public void ShouldNotBeAbleToRemoveOpenGroupTest()
         {
-            var store = new EntityHistory(new EntityRegistry());
+            var store = new HistorySystem(new EntityRegistry());
 
             store.BeginMutationGroup();
 

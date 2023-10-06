@@ -5,13 +5,13 @@ using System.Text;
 
 namespace Vent
 {
-    public static class EntityStoreExtensions
+    public static class EntityHistoryExtensions
     {
         /// <summary>
         /// Move's the store mutation position to the tail (-1)
         /// </summary>
         /// <param name="store"></param>
-        public static void ToTail(this EntityHistory store)
+        public static void ToTail(this HistorySystem store)
         {
             while (store.Undo()) { }
         }
@@ -20,7 +20,7 @@ namespace Vent
         /// Move's the store mutation position to the head (store.MutationCount)
         /// </summary>
         /// <param name="store"></param>
-        public static void ToHead(this EntityHistory store)
+        public static void ToHead(this HistorySystem store)
         {
             while (store.Redo()) { }
         }
@@ -31,7 +31,7 @@ namespace Vent
         /// <param name="store"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public static bool Undo(this EntityHistory store, int count)
+        public static bool Undo(this HistorySystem store, int count)
         {
             for (int i = 0; count < 0 || i < count; i++)
             {
@@ -50,7 +50,7 @@ namespace Vent
         /// <param name="store"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        public static bool Redo(this EntityHistory store, int count)
+        public static bool Redo(this HistorySystem store, int count)
         {
             for (int i = 0; count < 0 || i < count; i++)
             {
@@ -66,16 +66,16 @@ namespace Vent
         /// <summary>
         /// Creates a string from the current state of the store
         /// </summary>
-        /// <param name="store"></param>
+        /// <param name="history"></param>
         /// <returns></returns>
-        public static string ToStateString(this EntityHistory store)
+        public static string ToStateString(this HistorySystem history)
         {
             var builder = new StringBuilder();
 
             
-            builder.AppendLine($"Mutations: {store.CurrentMutation} / {store.MutationCount}");
+            builder.AppendLine($"Mutations: {history.CurrentMutation} / {history.MutationCount}");
 
-            var mutations = store.Registry.GetEntitiesOf<CommitEntity>()
+            var mutations = history.Registry.GetEntitiesOf<CommitEntity>()
                                     .OrderBy( m => m.TimeStamp)
                                     .ToList();
 
@@ -84,9 +84,9 @@ namespace Vent
                 builder.AppendLine(mutation.ToString());
             }
 
-            builder.AppendLine($"Entity count: {store.Registry.EntitiesInScope}");
+            builder.AppendLine($"Entity count: {history.Registry.EntitiesInScope}");
 
-            var versionedEntities = store.Registry.Where(kvp => store.HasVersionInfo(kvp.Value))
+            var versionedEntities = history.Registry.Where(kvp => history.HasVersionInfo(kvp.Value))
                                         .Select( kvp => kvp.Value)
                                         .OrderBy(e => e.Id);
 
@@ -94,7 +94,7 @@ namespace Vent
             {
                 foreach (var e in versionedEntities)
                 {
-                    var versionInfo = store.GetVersionInfo(e);
+                    var versionInfo = history.GetVersionInfo(e);
                     builder.AppendLine($"id: {e.Id}, type:{e.GetType().Name}) = {e}, v:{versionInfo.CurrentVersion}/{versionInfo.Versions.Count}");
                 }
             }
@@ -110,7 +110,7 @@ namespace Vent
         /// <param name="rng"></param>
         /// <param name="needsVersioning"></param>
         /// <returns></returns>
-        public static T SelectRandomEntity<T>(this EntityHistory store, Random rng, bool needsVersioning = true ) where T : IEntity
+        public static T SelectRandomEntity<T>(this HistorySystem store, Random rng, bool needsVersioning = true ) where T : IEntity
         {
             Contract.NotNull(rng);
             
@@ -127,6 +127,17 @@ namespace Vent
             }
 
             return default;
+        }
+
+        /// <summary>
+        /// Utility used primarily by tests. The entity may not be part of the registry but an entity
+        /// with its Id is contained in History's registry.
+        /// </summary>
+        /// <param name="store"></param>
+        /// <param name="entity"></param>
+        public static void DeregisterById(this HistorySystem store, int id)
+        {
+            store.Deregister(store.Registry[id]);
         }
     }
 }

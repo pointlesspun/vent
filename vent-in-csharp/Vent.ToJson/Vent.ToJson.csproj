@@ -10,4 +10,8 @@
     <ProjectReference Include="..\Vent\Vent.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Entities\" />
+  </ItemGroup>
+
 </Project>

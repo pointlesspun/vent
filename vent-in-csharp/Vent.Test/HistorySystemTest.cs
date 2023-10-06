@@ -4,34 +4,36 @@
 namespace Vent.Test
 {
     [TestClass]
-    public class EntityStoreTest
+    public class HistorySystemTest
     {
+
+
         [TestMethod]
         public void RegisterDegisterPropertyEntityTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
 
             var ent = registry.Add(new PropertyEntity<string>("foo"));
 
-            Assert.IsTrue(registry.EntitiesInScope == 1);
+            Assert.IsTrue(registry.EntitiesInScope == 2);
             Assert.IsTrue(registry[ent.Id] == ent);
 
             store.Deregister(ent);
 
-            Assert.IsTrue(registry.EntitiesInScope == 0);
+            Assert.IsTrue(registry.EntitiesInScope == 1);
         }
 
         [TestMethod]
         public void RegisterDegisterVersionedPropertyEntityTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent = store.Commit(new PropertyEntity<string>("foo"));
 
             // 1 for the entity, one for the version info 1 for 
             // the version0 and 1 for the mutations
-            Assert.IsTrue(registry.EntitiesInScope == 4);
+            Assert.IsTrue(registry.EntitiesInScope == 5);
 
             Assert.IsTrue(store.Mutations.Count() == 1);
 
@@ -62,8 +64,8 @@ namespace Vent.Test
             // version info and version0 should still be there
             // a new mutation should be added
             // as well as a version1 for deregisting
-            Assert.IsTrue(registry.EntitiesInScope == 5);
-            Assert.IsTrue(registry.SlotCount == 6);
+            Assert.IsTrue(registry.EntitiesInScope == 6);
+            Assert.IsTrue(registry.SlotCount == 7);
 
             Assert.IsTrue(store.Mutations.Count() == 2);
 
@@ -86,7 +88,7 @@ namespace Vent.Test
         public void RegisterUndoTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
 
             var ent = store.Commit(new PropertyEntity<string>()
             {
@@ -115,7 +117,7 @@ namespace Vent.Test
         public void RegisterCommitUndoTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
 
             var ent = store.Commit(new PropertyEntity<string>()
             {
@@ -143,7 +145,7 @@ namespace Vent.Test
         public void RegisterCommitUndoRedoTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
 
             var ent = store.Commit(new PropertyEntity<string>()
             {
@@ -210,10 +212,7 @@ namespace Vent.Test
         public void CutOffTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry)
-            {
-                MaxMutations = 2
-            };
+            var store = new HistorySystem(registry, new EntityHistory(2));
 
             var ent = store.Commit(new PropertyEntity<string>("foo"));
             var values = new[] { "bar", "qez", "xim" };
@@ -236,25 +235,26 @@ namespace Vent.Test
         public void CutOffAndUndoRedoTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry)
+            var historyData = new EntityHistory()
             {
                 MaxMutations = 2
             };
+            var history = new HistorySystem(registry, historyData);
 
-            var ent = store.Commit(new PropertyEntity<string>("foo"));
+            var ent = history.Commit(new PropertyEntity<string>("foo"));
             var values = new[] { "bar", "qez", "xim" };
 
             foreach (var str in values)
             {
                 ent.Value = str;
-                store.Commit(ent);
+                history.Commit(ent);
             }
 
-            while (store.Undo()) { }
+            while (history.Undo()) { }
 
             Assert.IsTrue(ent.Value == "qez");
 
-            while (store.Redo()) { }
+            while (history.Redo()) { }
 
             Assert.IsTrue(ent.Value == "xim");
         }
@@ -265,7 +265,7 @@ namespace Vent.Test
         public void UndoAndCommitTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent = store.Commit(new PropertyEntity<string>("foo"));
             var values = new[] { "bar", "qez", "xim" };
 
@@ -286,7 +286,7 @@ namespace Vent.Test
             Assert.IsTrue(store.MutationCount == 2);
 
             // ent, 2 versions, versioninfo, 2 mutations
-            Assert.IsTrue(registry.EntitiesInScope == 6);
+            Assert.IsTrue(registry.EntitiesInScope == 7);
 
             Assert.IsFalse(store.Redo());
 
@@ -310,7 +310,7 @@ namespace Vent.Test
         public void UndoAllAndCommitTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent = store.Commit(new PropertyEntity<string>("foo"));
             var values = new[] { "bar", "qez", "xim" };
 
@@ -334,7 +334,7 @@ namespace Vent.Test
             Assert.IsTrue(store.MutationCount == 1);
 
             // ent, 1 versions, versioninfo, 1 mutations
-            Assert.IsTrue(registry.EntitiesInScope == 4);
+            Assert.IsTrue(registry.EntitiesInScope == 5);
             Assert.IsTrue(ent.Value == "tun");
 
             var versionInfo = (VersionInfo)registry.First(e => e.Value is VersionInfo).Value;
@@ -360,7 +360,7 @@ namespace Vent.Test
         public void UndoAllAndRegisterTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
 
             var values = new[] { "bar", "qez", "xim" };
@@ -380,8 +380,8 @@ namespace Vent.Test
             // all versions should be gone now except tun
             Assert.IsTrue(store.MutationCount == 1);
 
-            // 1 x ent, 1 versions, 1 x versioninfo, 1 mutations
-            Assert.IsTrue(registry.EntitiesInScope == 4);
+            // 1 x history data, 1 x ent, 1 versions, 1 x versioninfo, 1 mutations
+            Assert.IsTrue(registry.EntitiesInScope == 5);
             Assert.IsTrue(ent1.Value == "foo");
             Assert.IsFalse(registry.Contains(ent1));
             Assert.IsTrue(registry.Contains(ent2));
@@ -411,7 +411,7 @@ namespace Vent.Test
         public void UndoAllAndDeregisterTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent = store.Commit(new PropertyEntity<string>("foo"));
 
             var values = new[] { "bar", "qez", "xim" };
@@ -437,7 +437,7 @@ namespace Vent.Test
         public void UndoSomeAndDeregisterTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent = store.Commit(new PropertyEntity<string>("foo"));
 
             var values = new[] { "bar", "qez", "xim" };
@@ -458,8 +458,8 @@ namespace Vent.Test
             // foo, bar, dereg
             Assert.IsTrue(store.MutationCount == 3);
 
-            Assert.IsTrue(registry.EntitiesInScope == 7);
-            Assert.IsTrue(registry.SlotCount == 8);
+            Assert.IsTrue(registry.EntitiesInScope == 8);
+            Assert.IsTrue(registry.SlotCount == 9);
             Assert.IsFalse(registry.Contains(ent));
 
             var versionInfo = (VersionInfo)registry.FirstOrDefault(e => e.Value is VersionInfo vi && vi.HeadId == oldEntId).Value;
@@ -510,7 +510,7 @@ namespace Vent.Test
         public void RevertTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent = store.Commit(new PropertyEntity<string>("foo"));
             var currentMutation = store.CurrentMutation;
 
@@ -528,7 +528,7 @@ namespace Vent.Test
         public void MutlipleEntityTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             var ent2 = store.Commit(new PropertyEntity<string>("bar"));
             var ent3 = store.Commit(new PropertyEntity<string>("qez"));
@@ -556,15 +556,13 @@ namespace Vent.Test
         public void MutlipleEntityWithOverwriteTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry)
-            {
-                MaxMutations = -1
-            };
+            var history = new HistorySystem(registry, new EntityHistory(-1));
 
-            var entities = new[] {
-                store.Commit(new PropertyEntity<string>("foo")),
-                store.Commit(new PropertyEntity<string>("bar")),
-                store.Commit(new PropertyEntity<string>("qez"))
+            var entities = new[] 
+            {
+                history.Commit(new PropertyEntity<string>("foo")),
+                history.Commit(new PropertyEntity<string>("bar")),
+                history.Commit(new PropertyEntity<string>("qez"))
             };
 
             // keep the ids so we can track the version info even if 
@@ -577,16 +575,16 @@ namespace Vent.Test
             };
 
             // verify initial version state
-            var entityVersion = store.GetVersionInfo(entities[0]);
+            var entityVersion = history.GetVersionInfo(entities[0]);
 
             Assert.IsTrue(entityVersion.Versions.Count == 1);
             Assert.IsTrue(entityVersion.CurrentVersion == 1);
 
-            entityVersion = store.GetVersionInfo(entities[1]);
+            entityVersion = history.GetVersionInfo(entities[1]);
             Assert.IsTrue(entityVersion.Versions.Count == 1);
             Assert.IsTrue(entityVersion.CurrentVersion == 1);
 
-            entityVersion = store.GetVersionInfo(entities[2]);
+            entityVersion = history.GetVersionInfo(entities[2]);
             Assert.IsTrue(entityVersion.Versions.Count == 1);
             Assert.IsTrue(entityVersion.CurrentVersion == 1);
 
@@ -598,79 +596,79 @@ namespace Vent.Test
                 Array.ForEach(entities, e =>
                 {
                     e.Value += i;
-                    store.Commit(e);
+                    history.Commit(e);
                 });
             }
 
             // move back to the point where ent[1] = bar01
             while (entities[1].Value != "bar01")
             {
-                store.Undo();
+                history.Undo();
             }
 
             // verify the store state
             // 3 entities + 3 versionInfo + 4x3 versions + 12 mutations
-            Assert.IsTrue(store.MutationCount == 12);
+            Assert.IsTrue(history.MutationCount == 12);
             Assert.IsTrue(registry.EntitiesInScope == 30);
 
             // verify the version state
-            entityVersion = store.GetVersionInfo(entities[0]);
+            entityVersion = history.GetVersionInfo(entities[0]);
 
             Assert.IsTrue(entityVersion.Versions.Count == 4);
             Assert.IsTrue(entityVersion.CurrentVersion == 3);
 
-            entityVersion = store.GetVersionInfo(entities[1]);
+            entityVersion = history.GetVersionInfo(entities[1]);
             Assert.IsTrue(entityVersion.Versions.Count == 4);
             Assert.IsTrue(entityVersion.CurrentVersion == 2);
 
-            entityVersion = store.GetVersionInfo(entities[2]);
+            entityVersion = history.GetVersionInfo(entities[2]);
             Assert.IsTrue(entityVersion.Versions.Count == 4);
             Assert.IsTrue(entityVersion.CurrentVersion == 2);
 
             entities[1].Value = "clearbar";
 
             // this will cut off several mutations
-            store.Commit(entities[1]);
+            history.Commit(entities[1]);
 
             // verify the store state
             // 3 entities + 3 versionInfo + 4x2 versions + 8 mutations
-            Assert.IsTrue(store.MutationCount == 8);
+            Assert.IsTrue(history.MutationCount == 8);
             Assert.IsTrue(registry.EntitiesInScope == 22);
-            Assert.IsTrue(store.CurrentMutation == 8);
+            Assert.IsTrue(history.CurrentMutation == 8);
 
             // verify the version state (all versions should be at the head)
-            entityVersion = store.GetVersionInfo(entities[0]);
+            entityVersion = history.GetVersionInfo(entities[0]);
             Assert.IsTrue(entityVersion.Versions.Count == 3);
             Assert.IsTrue(entityVersion.CurrentVersion == 3);
 
-            entityVersion = store.GetVersionInfo(entities[1]);
+            entityVersion = history.GetVersionInfo(entities[1]);
             Assert.IsTrue(entityVersion.Versions.Count == 3);
             Assert.IsTrue(entityVersion.CurrentVersion == 3);
 
-            entityVersion = store.GetVersionInfo(entities[2]);
+            entityVersion = history.GetVersionInfo(entities[2]);
             Assert.IsTrue(entityVersion.Versions.Count == 2);
             Assert.IsTrue(entityVersion.CurrentVersion == 2);
 
             // go back to the tail
-            store.ToTail();
+            history.ToTail();
 
             Array.ForEach(entities, e => Assert.IsFalse(registry.Contains(e)));
 
             // verify the version state (all versions should be at the tail)
-            entityVersion = store.GetVersionInfo(entityIds[0]);
+            entityVersion = history.GetVersionInfo(entityIds[0]);
             Assert.IsTrue(entityVersion.Versions.Count == 3);
             Assert.IsTrue(entityVersion.CurrentVersion == -1);
 
-            entityVersion = store.GetVersionInfo(entityIds[1]);
+            entityVersion = history.GetVersionInfo(entityIds[1]);
             Assert.IsTrue(entityVersion.Versions.Count == 3);
             Assert.IsTrue(entityVersion.CurrentVersion == -1);
 
-            entityVersion = store.GetVersionInfo(entityIds[2]);
+            entityVersion = history.GetVersionInfo(entityIds[2]);
             Assert.IsTrue(entityVersion.Versions.Count == 2);
             Assert.IsTrue(entityVersion.CurrentVersion == -1);
 
             // go back to the head
-            store.ToHead();
+            history.ToHead();
 
             Array.ForEach(entities, e => Assert.IsTrue(registry.Contains(e)));
 
@@ -679,15 +677,15 @@ namespace Vent.Test
             Assert.IsTrue(entities[2].Value == "qez0");
 
             // verify the version state
-            entityVersion = store.GetVersionInfo(entityIds[0]);
+            entityVersion = history.GetVersionInfo(entityIds[0]);
             Assert.IsTrue(entityVersion.Versions.Count == 3);
             Assert.IsTrue(entityVersion.CurrentVersion == 3);
 
-            entityVersion = store.GetVersionInfo(entityIds[1]);
+            entityVersion = history.GetVersionInfo(entityIds[1]);
             Assert.IsTrue(entityVersion.Versions.Count == 3);
             Assert.IsTrue(entityVersion.CurrentVersion == 3);
 
-            entityVersion = store.GetVersionInfo(entityIds[2]);
+            entityVersion = history.GetVersionInfo(entityIds[2]);
             Assert.IsTrue(entityVersion.Versions.Count == 2);
             Assert.IsTrue(entityVersion.CurrentVersion == 2);
         }
@@ -696,7 +694,7 @@ namespace Vent.Test
         public void RemoveOldestCommitMutationTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent1 = new PropertyEntity<string>("foo");
             var ent2 = new PropertyEntity<string>("bar");
             store.Commit(ent1);
@@ -706,8 +704,8 @@ namespace Vent.Test
             Assert.IsTrue(registry.Contains(ent2));
             Assert.IsTrue(store.MutationCount == 2);
             Assert.IsTrue(store.CurrentMutation == 2);
-            Assert.IsTrue(registry.EntitiesInScope == 8);
-            Assert.IsTrue(registry.SlotCount == 8);
+            Assert.IsTrue(registry.EntitiesInScope == 9);
+            Assert.IsTrue(registry.SlotCount == 9);
 
             store.DeleteMutation(0);
 
@@ -715,8 +713,8 @@ namespace Vent.Test
             Assert.IsTrue(registry.Contains(ent2));
             Assert.IsTrue(store.MutationCount == 1);
             Assert.IsTrue(store.CurrentMutation == 1);
-            Assert.IsTrue(registry.EntitiesInScope == 4);
-            Assert.IsTrue(registry.SlotCount == 4);
+            Assert.IsTrue(registry.EntitiesInScope == 5);
+            Assert.IsTrue(registry.SlotCount == 5);
 
             store.DeleteMutation(0);
 
@@ -724,15 +722,15 @@ namespace Vent.Test
             Assert.IsFalse(registry.Contains(ent2));
             Assert.IsTrue(store.MutationCount == 0);
             Assert.IsTrue(store.CurrentMutation == 0);
-            Assert.IsTrue(registry.EntitiesInScope == 0);
-            Assert.IsTrue(registry.SlotCount == 0);
+            Assert.IsTrue(registry.EntitiesInScope == 1);
+            Assert.IsTrue(registry.SlotCount == 1);
         }
 
         [TestMethod]
         public void RemoveOldestDeregisterMutationTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent1 = new PropertyEntity<string>("foo");
             var ent2 = new PropertyEntity<string>("bar");
             store.Commit(ent1);
@@ -743,8 +741,8 @@ namespace Vent.Test
             Assert.IsTrue(registry.Contains(ent2));
             Assert.IsTrue(store.MutationCount == 3);
             Assert.IsTrue(store.CurrentMutation == 3);
-            Assert.IsTrue(registry.EntitiesInScope == 9);
-            Assert.IsTrue(registry.SlotCount == 10);
+            Assert.IsTrue(registry.EntitiesInScope == 10);
+            Assert.IsTrue(registry.SlotCount == 11);
 
             store.DeleteMutation(0);
 
@@ -752,8 +750,8 @@ namespace Vent.Test
             Assert.IsTrue(registry.Contains(ent2));
             Assert.IsTrue(store.MutationCount == 2);
             Assert.IsTrue(store.CurrentMutation == 2);
-            Assert.IsTrue(registry.EntitiesInScope == 7);
-            Assert.IsTrue(registry.SlotCount == 8);
+            Assert.IsTrue(registry.EntitiesInScope == 8);
+            Assert.IsTrue(registry.SlotCount == 9);
 
             store.DeleteMutation(0);
 
@@ -761,8 +759,8 @@ namespace Vent.Test
             Assert.IsTrue(registry.Contains(ent2));
             Assert.IsTrue(store.MutationCount == 1);
             Assert.IsTrue(store.CurrentMutation == 1);
-            Assert.IsTrue(registry.EntitiesInScope == 4);
-            Assert.IsTrue(registry.SlotCount == 4);
+            Assert.IsTrue(registry.EntitiesInScope == 5);
+            Assert.IsTrue(registry.SlotCount == 5);
 
             store.DeleteMutation(0);
 
@@ -770,8 +768,8 @@ namespace Vent.Test
             Assert.IsFalse(registry.Contains(ent2));
             Assert.IsTrue(store.MutationCount == 0);
             Assert.IsTrue(store.CurrentMutation == 0);
-            Assert.IsTrue(registry.EntitiesInScope == 0);
-            Assert.IsTrue(registry.SlotCount == 0);
+            Assert.IsTrue(registry.EntitiesInScope == 1);
+            Assert.IsTrue(registry.SlotCount == 1);
         }
 
         /// <summary>
@@ -781,14 +779,14 @@ namespace Vent.Test
         public void RemoveLastCommitTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             var ent2 = store.Commit(new PropertyEntity<string>("bar"));
             var ent3 = store.Commit(new PropertyEntity<string>("qaz"));
 
             // verify pre-state
             Assert.IsTrue(registry.Count(kvp => kvp.Value is VersionInfo) == 3);
-            Assert.IsTrue(registry.EntitiesInScope == 12);
+            Assert.IsTrue(registry.EntitiesInScope == 13);
             Assert.IsTrue(store.MutationCount == 3);
             Assert.IsTrue(store.CurrentMutation == 3);
 
@@ -798,7 +796,7 @@ namespace Vent.Test
             Assert.IsTrue(store.CurrentMutation == 2);
             Assert.IsTrue(store.MutationCount == 2);
 
-            Assert.IsTrue(registry.EntitiesInScope == 8);
+            Assert.IsTrue(registry.EntitiesInScope == 9);
             Assert.IsTrue(registry.Contains(ent1));
             Assert.IsTrue(registry.Contains(ent2));
             Assert.IsFalse(registry.Contains(ent3));
@@ -816,14 +814,14 @@ namespace Vent.Test
         public void RemoveMidCommitTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             var ent2 = store.Commit(new PropertyEntity<string>("bar"));
             var ent3 = store.Commit(new PropertyEntity<string>("qaz"));
 
             // verify pre-state
             Assert.IsTrue(registry.Count(e => e.Value is VersionInfo) == 3);
-            Assert.IsTrue(registry.EntitiesInScope == 12);
+            Assert.IsTrue(registry.EntitiesInScope == 13);
             Assert.IsTrue(store.CurrentMutation == 3);
 
             store.DeleteMutation(1);
@@ -832,7 +830,7 @@ namespace Vent.Test
             Assert.IsTrue(store.CurrentMutation == 2);
             Assert.IsTrue(store.MutationCount == 2);
 
-            Assert.IsTrue(registry.EntitiesInScope == 8);
+            Assert.IsTrue(registry.EntitiesInScope == 9);
             Assert.IsTrue(registry.Contains(ent1));
             Assert.IsFalse(registry.Contains(ent2));
             Assert.IsTrue(registry.Contains(ent3));
@@ -850,7 +848,7 @@ namespace Vent.Test
         public void RemoveFirstCommitSingleEntityTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             store.Commit(ent1.With("bar"));
             store.Commit(ent1.With("qaz"));
@@ -859,7 +857,7 @@ namespace Vent.Test
             var version = store.GetVersionInfo(ent1);
             Assert.IsTrue(version.Versions.Count == 3);
             Assert.IsTrue(version.CurrentVersion == 3);
-            Assert.IsTrue(registry.EntitiesInScope == 8);
+            Assert.IsTrue(registry.EntitiesInScope == 9);
             Assert.IsTrue(store.CurrentMutation == 3);
             Assert.IsTrue(store.MutationCount == 3);
 
@@ -869,7 +867,7 @@ namespace Vent.Test
             Assert.IsTrue(store.CurrentMutation == 2);
             Assert.IsTrue(store.MutationCount == 2);
 
-            Assert.IsTrue(registry.EntitiesInScope == 6);
+            Assert.IsTrue(registry.EntitiesInScope == 7);
             Assert.IsTrue(registry.Contains(ent1));
 
             Assert.IsTrue((store.GetMutation(0) as CommitEntity).MutatedEntityId == ent1.Id);
@@ -895,7 +893,7 @@ namespace Vent.Test
         public void RemoveMiddleCommitSingleEntityTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent = store.Commit(new PropertyEntity<string>("foo"));
             store.Commit(ent.With("bar"));
             store.Commit(ent.With("qaz"));
@@ -904,7 +902,7 @@ namespace Vent.Test
             var version = store.GetVersionInfo(ent);
             Assert.IsTrue(version.Versions.Count == 3);
             Assert.IsTrue(version.CurrentVersion == 3);
-            Assert.IsTrue(registry.EntitiesInScope == 8);
+            Assert.IsTrue(registry.EntitiesInScope == 9);
             Assert.IsTrue(store.CurrentMutation == 3);
             Assert.IsTrue(store.MutationCount == 3);
 
@@ -914,7 +912,7 @@ namespace Vent.Test
             Assert.IsTrue(store.CurrentMutation == 2);
             Assert.IsTrue(store.MutationCount == 2);
 
-            Assert.IsTrue(registry.EntitiesInScope == 6);
+            Assert.IsTrue(registry.EntitiesInScope == 7);
             Assert.IsTrue(registry.Contains(ent));
 
             Assert.IsTrue((store.GetMutation(0) as CommitEntity).MutatedEntityId == ent.Id);
@@ -940,7 +938,7 @@ namespace Vent.Test
         public void RemoveLastCommitSingleEntityTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent = store.Commit(new PropertyEntity<string>("foo"));
             store.Commit(ent.With("bar"));
             store.Commit(ent.With("qaz"));
@@ -949,7 +947,7 @@ namespace Vent.Test
             var version = store.GetVersionInfo(ent);
             Assert.IsTrue(version.Versions.Count == 3);
             Assert.IsTrue(version.CurrentVersion == 3);
-            Assert.IsTrue(registry.EntitiesInScope == 8);
+            Assert.IsTrue(registry.EntitiesInScope == 9);
             Assert.IsTrue(store.CurrentMutation == 3);
             Assert.IsTrue(store.MutationCount == 3);
 
@@ -959,7 +957,7 @@ namespace Vent.Test
             Assert.IsTrue(store.CurrentMutation == 2);
             Assert.IsTrue(store.MutationCount == 2);
 
-            Assert.IsTrue(registry.EntitiesInScope == 6);
+            Assert.IsTrue(registry.EntitiesInScope == 7);
             Assert.IsTrue(registry.Contains(ent));
 
             Assert.IsTrue((store.GetMutation(0) as CommitEntity).MutatedEntityId == ent.Id);
@@ -978,7 +976,6 @@ namespace Vent.Test
             Assert.IsTrue(ent.Value == "bar");
         }
 
-
         /// <summary>
         /// Remove the first deregister, see if everything is peachy.
         /// </summary>
@@ -986,14 +983,14 @@ namespace Vent.Test
         public void RemoveDeregisterFirstTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             store.Deregister(ent1);
             var ent2 = store.Commit(new PropertyEntity<string>("bar"));
             var ent3 = store.Commit(new PropertyEntity<string>("qaz"));
 
             // verify pre-state
-            Assert.IsTrue(registry.EntitiesInScope == 13);
+            Assert.IsTrue(registry.EntitiesInScope == 14);
             Assert.IsTrue(store.CurrentMutation == 4);
             Assert.IsTrue(store.MutationCount == 4);
             Assert.IsFalse(registry.Contains(ent1));
@@ -1010,7 +1007,7 @@ namespace Vent.Test
             Assert.IsTrue(store.CurrentMutation == 2);
             Assert.IsTrue(store.MutationCount == 2);
 
-            Assert.IsTrue(registry.EntitiesInScope == 8);
+            Assert.IsTrue(registry.EntitiesInScope == 9);
             Assert.IsFalse(registry.Contains(ent1));
             Assert.IsTrue(registry.Contains(ent2));
             Assert.IsTrue(registry.Contains(ent3));
@@ -1024,29 +1021,29 @@ namespace Vent.Test
         public void RemoveDeregisterInMiddlePositionTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
-            var ent1 = store.Commit(new PropertyEntity<string>("foo"));
-            store.Commit(ent1.With("bar"));
-            store.Deregister(ent1);
-            var ent2 = store.Commit(new PropertyEntity<string>("qaz"));
+            var history = new HistorySystem(registry);
+            var ent1 = history.Commit(new PropertyEntity<string>("foo"));
+            history.Commit(ent1.With("bar"));
+            history.Deregister(ent1);
+            var ent2 = history.Commit(new PropertyEntity<string>("qaz"));
 
             // verify pre-state
-            Assert.IsTrue(registry.EntitiesInScope == 11);
-            Assert.IsTrue(store.CurrentMutation == 4);
-            Assert.IsTrue(store.MutationCount == 4);
+            Assert.IsTrue(registry.EntitiesInScope == 12);
+            Assert.IsTrue(history.CurrentMutation == 4);
+            Assert.IsTrue(history.MutationCount == 4);
             Assert.IsFalse(registry.Contains(ent1));
             Assert.IsTrue(registry.Contains(ent2));
 
             // remove the deregister 
-            store.DeleteMutation(2);
+            history.DeleteMutation(2);
 
             // test outcome
-            Assert.IsTrue(store.CurrentMutation == 3);
-            Assert.IsTrue(store.MutationCount == 3);
+            Assert.IsTrue(history.CurrentMutation == 3);
+            Assert.IsTrue(history.MutationCount == 3);
 
             Assert.IsTrue(registry.Contains(ent1));
             Assert.IsTrue(registry.Contains(ent2));
-            Assert.IsTrue(registry.EntitiesInScope == 10);
+            Assert.IsTrue(registry.EntitiesInScope == 11);
             Assert.IsTrue(ent1.Value == "bar");
             Assert.IsTrue(ent1.Id >= 0);
         }
@@ -1060,41 +1057,42 @@ namespace Vent.Test
         public void RemoveDeregisterInMiddlePositionAfterGoToTailTest()
         { 
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
-            var ent1 = store.Commit(new PropertyEntity<string>("foo"));
-            store.Commit(ent1.With("bar"));
-            store.Deregister(ent1);
-            var ent2 = store.Commit(new PropertyEntity<string>("qaz"));
+            var history = new HistorySystem(registry);
+            var ent1 = history.Commit(new PropertyEntity<string>("foo"));
+            history.Commit(ent1.With("bar"));
+            history.Deregister(ent1);
+            var ent2 = history.Commit(new PropertyEntity<string>("qaz"));
 
-            // ent1 initial commit "foo" = 4
-            // commit "bar" = +2 (6)
-            // deregister = +2, -1 (7)
-            // ent2 = +=4 (11)
-            Assert.IsTrue(registry.EntitiesInScope == 11);
+            // history = 1
+            // ent1 initial commit "foo" = 5
+            // commit "bar" = +2 (7)
+            // deregister = +2, -1 (8)
+            // ent2 = +=4 (12)
+            Assert.IsTrue(registry.EntitiesInScope == 12);
 
             // verify pre-state
-            store.ToTail();
+            history.ToTail();
 
             // should have deregistered ent2 so entities in scope should be 11            
-            Assert.IsTrue(registry.EntitiesInScope == 10);
-            Assert.IsTrue(store.CurrentMutation == -1);
-            Assert.IsTrue(store.MutationCount == 4);
+            Assert.IsTrue(registry.EntitiesInScope == 11);
+            Assert.IsTrue(history.CurrentMutation == -1);
+            Assert.IsTrue(history.MutationCount == 4);
             Assert.IsFalse(registry.Contains(ent1));
             Assert.IsFalse(registry.Contains(ent2));
 
             // remove the deregister 
-            store.DeleteMutation(2);
+            history.DeleteMutation(2);
 
             // test outcome
-            Assert.IsTrue(store.CurrentMutation == -1);
-            Assert.IsTrue(store.MutationCount == 3);
+            Assert.IsTrue(history.CurrentMutation == -1);
+            Assert.IsTrue(history.MutationCount == 3);
 
             Assert.IsFalse(registry.Contains(ent1));
             Assert.IsFalse(registry.Contains(ent2));
-            Assert.IsTrue(registry.EntitiesInScope == 8);
+            Assert.IsTrue(registry.EntitiesInScope == 9);
             Assert.IsTrue(ent1.Id < 0);
 
-            store.ToHead();
+            history.ToHead();
 
             Assert.IsTrue(registry.Contains(ent1));
             Assert.IsTrue(registry.Contains(ent2));
@@ -1110,35 +1108,35 @@ namespace Vent.Test
         public void RemoveDeregisterInMiddlePositionAfterUndoBeforeDeregisterTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
-            var ent1 = store.Commit(new PropertyEntity<string>("foo"));
-            store.Commit(ent1.With("bar"));
-            store.Deregister(ent1);
-            var ent2 = store.Commit(new PropertyEntity<string>("qaz"));
+            var history = new HistorySystem(registry);
+            var ent1 = history.Commit(new PropertyEntity<string>("foo"));
+            history.Commit(ent1.With("bar"));
+            history.Deregister(ent1);
+            var ent2 = history.Commit(new PropertyEntity<string>("qaz"));
 
             // verify pre-state
-            store.Undo();
-            store.Undo();
-            store.Undo();
+            history.Undo();
+            history.Undo();
+            history.Undo();
 
-            Assert.IsTrue(registry.EntitiesInScope == 11);
-            Assert.IsTrue(store.CurrentMutation == 1);
-            Assert.IsTrue(store.MutationCount == 4);
+            Assert.IsTrue(registry.EntitiesInScope == 12);
+            Assert.IsTrue(history.CurrentMutation == 1);
+            Assert.IsTrue(history.MutationCount == 4);
             Assert.IsTrue(registry.Contains(ent1));
             Assert.IsFalse(registry.Contains(ent2));
 
             // remove the deregister 
-            store.DeleteMutation(2);
+            history.DeleteMutation(2);
 
             // test outcome
-            Assert.IsTrue(store.CurrentMutation == 1);
-            Assert.IsTrue(store.MutationCount == 3);
+            Assert.IsTrue(history.CurrentMutation == 1);
+            Assert.IsTrue(history.MutationCount == 3);
 
             Assert.IsTrue(registry.Contains(ent1));
             Assert.IsFalse(registry.Contains(ent2));
-            Assert.IsTrue(registry.EntitiesInScope == 9);
+            Assert.IsTrue(registry.EntitiesInScope == 10);
 
-            store.ToHead();
+            history.ToHead();
 
             Assert.IsTrue(registry.Contains(ent1));
             Assert.IsTrue(registry.Contains(ent2));
@@ -1153,14 +1151,14 @@ namespace Vent.Test
         public void DeleteDeregisterInLastPositionTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             store.Commit(ent1.With("bar"));
             var ent2 = store.Commit(new PropertyEntity<string>("qaz"));
             store.Deregister(ent1);
 
             // verify pre-state
-            Assert.IsTrue(registry.EntitiesInScope == 11);
+            Assert.IsTrue(registry.EntitiesInScope == 12);
             Assert.IsTrue(store.CurrentMutation == 4);
             Assert.IsTrue(store.MutationCount == 4);
             Assert.IsFalse(registry.Contains(ent1));
@@ -1175,7 +1173,7 @@ namespace Vent.Test
 
             Assert.IsTrue(registry.Contains(ent1));
             Assert.IsTrue(registry.Contains(ent2));
-            Assert.IsTrue(registry.EntitiesInScope == 10);
+            Assert.IsTrue(registry.EntitiesInScope == 11);
             Assert.IsTrue(ent1.Value == "bar");
             Assert.IsTrue(ent1.Id >= 0);
         }
@@ -1190,7 +1188,7 @@ namespace Vent.Test
         public void DeleteBeginGroupInFirstPositionTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             store.BeginMutationGroup();
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             store.Commit(ent1.With("bar"));
@@ -1198,7 +1196,7 @@ namespace Vent.Test
             var ent2 = store.Commit(new PropertyEntity<string>("qaz"));
 
             // verify pre-state
-            Assert.IsTrue(registry.EntitiesInScope == 12);
+            Assert.IsTrue(registry.EntitiesInScope == 13);
             Assert.IsTrue(store.CurrentMutation == 5);
             Assert.IsTrue(store.MutationCount == 5);
             Assert.IsTrue(registry.Contains(ent1));
@@ -1207,8 +1205,8 @@ namespace Vent.Test
             // remove the begin
             store.DeleteMutation(0);
 
-            Assert.IsTrue(registry.EntitiesInScope == 4);
-            Assert.IsTrue(registry.SlotCount == 4);
+            Assert.IsTrue(registry.EntitiesInScope == 5);
+            Assert.IsTrue(registry.SlotCount == 5);
             Assert.IsTrue(store.CurrentMutation == 1);
             Assert.IsTrue(store.MutationCount == 1);
             Assert.IsFalse(registry.Contains(ent1));
@@ -1222,7 +1220,7 @@ namespace Vent.Test
         public void DeleteBeginGroupInMiddlePositionTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             store.BeginMutationGroup();
             store.Commit(new PropertyEntity<string>("bar"));
@@ -1231,7 +1229,7 @@ namespace Vent.Test
             var ent2 = store.Commit(new PropertyEntity<string>("thud"));
 
             // verify pre-state
-            Assert.IsTrue(registry.EntitiesInScope == 16);
+            Assert.IsTrue(registry.EntitiesInScope == 17);
             Assert.IsTrue(store.CurrentMutation == 6);
             Assert.IsTrue(store.MutationCount == 6);
             Assert.IsTrue(registry.Contains(ent1));
@@ -1240,8 +1238,8 @@ namespace Vent.Test
             // remove the group in the middle
             store.DeleteMutation(1);
 
-            Assert.IsTrue(registry.EntitiesInScope == 8);
-            Assert.IsTrue(registry.SlotCount == 8);
+            Assert.IsTrue(registry.EntitiesInScope == 9);
+            Assert.IsTrue(registry.SlotCount == 9);
             Assert.IsTrue(store.CurrentMutation == 2);
             Assert.IsTrue(store.MutationCount == 2);
             Assert.IsTrue(registry.Contains(ent1));
@@ -1260,7 +1258,7 @@ namespace Vent.Test
         public void DeleteEndGroupInMiddlePositionTest()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             store.BeginMutationGroup();
             store.Commit(ent1.With("qaz"));
@@ -1269,7 +1267,7 @@ namespace Vent.Test
 
 
             // verify pre-state
-            Assert.IsTrue(registry.EntitiesInScope == 12);
+            Assert.IsTrue(registry.EntitiesInScope == 13);
             Assert.IsTrue(store.CurrentMutation == 5);
             Assert.IsTrue(store.MutationCount == 5);
             Assert.IsTrue(registry.Contains(ent1));
@@ -1278,8 +1276,8 @@ namespace Vent.Test
             // remove the group at the end
             store.DeleteMutation(1);
 
-            Assert.IsTrue(registry.EntitiesInScope == 4);
-            Assert.IsTrue(registry.SlotCount == 4);
+            Assert.IsTrue(registry.EntitiesInScope == 5);
+            Assert.IsTrue(registry.SlotCount == 5);
             Assert.IsTrue(store.CurrentMutation == 1);
             Assert.IsTrue(store.MutationCount == 1);
             Assert.IsTrue(registry.Contains(ent1));
@@ -1294,7 +1292,7 @@ namespace Vent.Test
         public void DeleteEndGroupShouldTrowException()
         {
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
             store.BeginMutationGroup();
             store.Commit(ent1.With("qaz"));

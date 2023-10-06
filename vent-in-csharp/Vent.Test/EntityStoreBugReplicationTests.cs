@@ -25,7 +25,7 @@ namespace Vent.Test
 
         public void ReplicateUndoRedoBug()
         {
-            var store = new EntityHistory(new EntityRegistry());
+            var store = new HistorySystem(new EntityRegistry());
             // 64.qezu = a
             var ent0 = store.Commit(new PropertyEntity<string>("a"));
             // 367.qez = b
@@ -85,7 +85,7 @@ namespace Vent.Test
         [TestMethod]
         public void GroupBugEndUndoTest()
         {
-            var store = new EntityHistory(new EntityRegistry());
+            var store = new HistorySystem(new EntityRegistry());
             store.BeginMutationGroup();
             store.EndMutationGroup();
             // this would cause an exception
@@ -101,7 +101,7 @@ namespace Vent.Test
         [TestMethod]
         public void RedoWithDeregisterAtSlot0Test()
         {
-            var store = new EntityHistory(new EntityRegistry());
+            var store = new HistorySystem(new EntityRegistry());
             var ent = store.Commit(new StringEntity("foo"));
             store.Deregister(ent);
             store.ToTail();

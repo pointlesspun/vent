@@ -14,7 +14,7 @@ namespace Vent.Test
         {
             // create a new store
             var registry = new EntityRegistry();
-            var store = new EntityHistory(registry);
+            var store = new HistorySystem(registry);
 
             // commit an entity to the store to track information
             var ent = store.Commit(new PropertyEntity<string>("foo"));
@@ -69,7 +69,7 @@ namespace Vent.Test
         public void CutOffTest()
         {
             // create a new store
-            var store = new EntityHistory(new EntityRegistry());
+            var store = new HistorySystem(new EntityRegistry());
 
             // commit an entity to the store to track information
             var ent = store.Commit(new PropertyEntity<string>("foo"));
@@ -117,7 +117,7 @@ namespace Vent.Test
         public void RevertTest()
         {
             // create a new store
-            var store = new EntityHistory(new EntityRegistry());
+            var store = new HistorySystem(new EntityRegistry());
 
             // commit an entity to the store to track information
             var ent = store.Commit(new PropertyEntity<string>("foo"));
@@ -162,7 +162,7 @@ namespace Vent.Test
         [ExpectedException(typeof(InvalidOperationException))]
         public void RegisterRevertTest()
         {
-            var store = new EntityHistory(new EntityRegistry());
+            var store = new HistorySystem(new EntityRegistry());
             var ent = store.Registry.Add(new PropertyEntity<string>("foo"));
 
             store.Revert(ent);
@@ -172,7 +172,7 @@ namespace Vent.Test
         [TestMethod]
         public void RegisterCommitThenRevertTest()
         {
-            var store = new EntityHistory(new EntityRegistry());
+            var store = new HistorySystem(new EntityRegistry());
             var ent = store.Registry.Add(new PropertyEntity<string>("foo"));
 
             // this will add versioning to ent, allowing us to revert down the line
@@ -189,25 +189,25 @@ namespace Vent.Test
         [TestMethod]
         public void DeregisterWithRegisteredEntityTest()
         {
-            var store = new EntityHistory(new EntityRegistry());
+            var store = new HistorySystem(new EntityRegistry());
             var ent = store.Registry.Add(new PropertyEntity<string>("foo"));
 
             Assert.IsTrue(store.Registry.Contains(ent));
             Assert.IsTrue(store.GetVersionInfo(ent) == null);
             Assert.IsTrue(store.MutationCount == 0);
-            Assert.IsTrue(store.Registry.EntitiesInScope == 1);
+            Assert.IsTrue(store.Registry.EntitiesInScope == 2);
 
             store.Deregister(ent);
 
             Assert.IsFalse(store.Registry.Contains(ent));
             Assert.IsTrue(store.MutationCount == 0);
-            Assert.IsTrue(store.Registry.EntitiesInScope == 0);
+            Assert.IsTrue(store.Registry.EntitiesInScope == 1);
         }
 
         [TestMethod]
         public void DeregisterWithCommittedEntityTest()
         {
-            var store = new EntityHistory(new EntityRegistry());
+            var store = new HistorySystem(new EntityRegistry());
             var ent = store.Commit(new PropertyEntity<string>("foo"));
 
             Assert.IsTrue(store.Registry.Contains(ent));
@@ -216,7 +216,7 @@ namespace Vent.Test
 
             Assert.IsTrue(versionInfo != null);
             Assert.IsTrue(store.MutationCount == 1);
-            Assert.IsTrue(store.Registry.EntitiesInScope == 4);
+            Assert.IsTrue(store.Registry.EntitiesInScope == 5);
 
             store.Deregister(ent);
 
@@ -230,13 +230,13 @@ namespace Vent.Test
 
             // ent has been removed but the deregister mutation and exit version
             // has been added
-            Assert.IsTrue(store.Registry.EntitiesInScope == 5);
+            Assert.IsTrue(store.Registry.EntitiesInScope == 6);
         }
 
         [TestMethod]
         public void DeregisterWithRemovedEntityTest()
         {
-            var store = new EntityHistory(new EntityRegistry());
+            var store = new HistorySystem(new EntityRegistry());
             var ent = store.Commit(new PropertyEntity<string>("foo"));
 
             Assert.IsTrue(store.Registry.Contains(ent));
@@ -245,7 +245,7 @@ namespace Vent.Test
 
             Assert.IsTrue(versionInfo != null);
             Assert.IsTrue(store.MutationCount == 1);
-            Assert.IsTrue(store.Registry.EntitiesInScope == 4);
+            Assert.IsTrue(store.Registry.EntitiesInScope == 5);
 
             // move back to the point of the first commit (can't move back to the tail
             // because the entity doesn't exist at that point)
@@ -261,13 +261,13 @@ namespace Vent.Test
             Assert.IsTrue(store.MutationCount == 0);
 
             // all is gone
-            Assert.IsTrue(store.Registry.EntitiesInScope == 0);
+            Assert.IsTrue(store.Registry.EntitiesInScope == 1);
         }
 
         [TestMethod]
         public void GroupTest()
         {
-            var store = new EntityHistory(new EntityRegistry());
+            var store = new HistorySystem(new EntityRegistry());
             var ent = store.Commit(new PropertyEntity<string>("foo"));
 
             store.BeginMutationGroup();
