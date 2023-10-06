@@ -420,15 +420,17 @@ namespace Vent
             }
             else if (_registry.EntitySlots.TryGetValue(mutation.MutatedEntityId, out var ent))
             {
-                // mutated version has left scope but was still in the store
-                return ent;
+                if (ent != null)
+                {
+                    // mutated version has left scope but was still in the store
+                    return ent;
+                }
             }
-            else
-            {
-                // entity may have left the scope, create clone a new version
-                var clone= (IEntity)versionInfo.Versions[0].Clone();
-                return _registry.SetSlot(mutation.MutatedEntityId, clone);
-            }
+
+            // entity may have left the scope, create clone a new version
+            // this may happen after serialization which doesn't necessarily keep
+            // track of the head entities after they left the scope
+            return (IEntity)versionInfo.Versions[0].Clone();           
         }
 
         private void AddMutation(IMutation mutation)
@@ -488,6 +490,8 @@ namespace Vent
             {
                 if (!_registry.EntitySlots.TryGetValue(versionInfo.HeadId, out headEntity) || headEntity == null)
                 {
+                    // xxx test case with deserialize, mutated entity may be null after a deserialize
+                    // see if this needs to be a resolveEntity instead of this assignment
                     headEntity = deregisterEntity.MutatedEntity;
                     versionInfo.Revert(headEntity);
                     _registry.Add(headEntity);
@@ -554,12 +558,20 @@ namespace Vent
             var versionInfo = _historyData.EntityVersionInfo[mutation.MutatedEntityId];
             var entity = ResolveMutatedEntity(mutation, versionInfo);
 
+            // if the mutated entity in the mutation is null it means the entity 
+            // has left the scope and wasn't kept in memory. This may happen in the case
+            // of deserialization. If this happens restore the mutated entity in 
+            // the mutation.
+            mutation.MutatedEntity ??= entity;
+
             // undoing a deregister will move the entity back into scope
             // (ie into the entity registry)
             if (mutation is DeregisterEntity)
             {
                 _registry.SetSlot(mutation.MutatedEntityId, entity);
             }
+
+            
 
             versionInfo.Undo(entity);
         }

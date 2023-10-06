@@ -82,6 +82,7 @@ namespace Vent.Test
             Assert.IsTrue(deregisterMutation.MutatedEntity == ent);
 
             Assert.IsTrue(versionInfo.Versions.Count == 2);
+
         }
 
         [TestMethod]
