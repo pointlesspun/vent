@@ -571,8 +571,6 @@ namespace Vent
                 _registry.SetSlot(mutation.MutatedEntityId, entity);
             }
 
-            
-
             versionInfo.Undo(entity);
         }
 
