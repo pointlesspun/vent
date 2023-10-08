@@ -481,20 +481,8 @@ namespace Vent
 
             _historyData.Mutations.RemoveAt(index);
 
-            IEntity headEntity;
-
             if (_historyData.DeleteOutOfScopeVersions && versionInfo.Versions.Count == 0)
             {
-                headEntity = _registry[versionInfo.HeadId];
-
-                // entity may already have been removed and the slot was just occupied,
-                // so the head is null
-                // xxx probably don't need this anymore
-                if (headEntity != null)
-                {
-                    headEntity.Id = -1;
-                }
-
                 _historyData.EntityVersionInfo.Remove(versionInfo.HeadId);
                 _registry.Remove(versionInfo.Id);
 
@@ -508,7 +496,7 @@ namespace Vent
                 && versionInfo.CurrentVersion >= 0
                 && mutation is DeregisterEntity deregisterEntity)
             {
-                if (!_registry.EntitySlots.TryGetValue(versionInfo.HeadId, out headEntity) || headEntity == null)
+                if (!_registry.EntitySlots.TryGetValue(versionInfo.HeadId, out var headEntity) || headEntity == null)
                 {
                     // mutated entity may be null after a de/serialize so we need to resolve the entity
                     // and revert it to the last known version and put it back into the registry
