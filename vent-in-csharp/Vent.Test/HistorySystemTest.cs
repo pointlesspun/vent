@@ -213,7 +213,7 @@ namespace Vent.Test
         public void CutOffTest()
         {
             var registry = new EntityRegistry();
-            var store = new HistorySystem(registry, new EntityHistory(2));
+            var store = new HistorySystem(registry, registry.Add(new EntityHistory(2)));
 
             var ent = store.Commit(new PropertyEntity<string>("foo"));
             var values = new[] { "bar", "qez", "xim" };
@@ -240,7 +240,7 @@ namespace Vent.Test
             {
                 MaxMutations = 2
             };
-            var history = new HistorySystem(registry, historyData);
+            var history = new HistorySystem(registry, registry.Add(historyData));
 
             var ent = history.Commit(new PropertyEntity<string>("foo"));
             var values = new[] { "bar", "qez", "xim" };
@@ -557,7 +557,7 @@ namespace Vent.Test
         public void MutlipleEntityWithOverwriteTest()
         {
             var registry = new EntityRegistry();
-            var history = new HistorySystem(registry, new EntityHistory(-1));
+            var history = new HistorySystem(registry, registry.Add(new EntityHistory(maxMutations: -1)));
 
             var entities = new[] 
             {
@@ -608,9 +608,9 @@ namespace Vent.Test
             }
 
             // verify the store state
-            // 3 entities + 3 versionInfo + 4x3 versions + 12 mutations
+            // 3 entities + 3 versionInfo + 4x3 versions + 12 mutations + 1 history
             Assert.IsTrue(history.MutationCount == 12);
-            Assert.IsTrue(registry.EntitiesInScope == 30);
+            Assert.IsTrue(registry.EntitiesInScope == 31);
 
             // verify the version state
             entityVersion = history.GetVersionInfo(entities[0]);
@@ -632,9 +632,9 @@ namespace Vent.Test
             history.Commit(entities[1]);
 
             // verify the store state
-            // 3 entities + 3 versionInfo + 4x2 versions + 8 mutations
+            // 3 entities + 3 versionInfo + 4x2 versions + 8 mutations + 1 history
             Assert.IsTrue(history.MutationCount == 8);
-            Assert.IsTrue(registry.EntitiesInScope == 22);
+            Assert.IsTrue(registry.EntitiesInScope == 23);
             Assert.IsTrue(history.CurrentMutation == 8);
 
             // verify the version state (all versions should be at the head)

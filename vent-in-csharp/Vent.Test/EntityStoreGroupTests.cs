@@ -142,7 +142,7 @@ namespace Vent.Test
         public void ExceedMaxMutationCountTest()
         {
             var registry = new EntityRegistry();
-            var store = new HistorySystem(registry, new EntityHistory(4));
+            var store = new HistorySystem(registry, registry.Add(new EntityHistory(4)));
 
             store.BeginMutationGroup();
             var ent1 = store.Commit(new PropertyEntity<string>("foo"));
@@ -156,7 +156,7 @@ namespace Vent.Test
 
             Assert.IsTrue(store.MutationCount == 1);
             Assert.IsTrue(store.CurrentMutation == 1);
-            Assert.IsTrue(registry.EntitiesInScope == 4);
+            Assert.IsTrue(registry.EntitiesInScope == 5);
 
             Assert.IsFalse(registry.Contains(ent1));
             Assert.IsFalse(registry.Contains(ent2));

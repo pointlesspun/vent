@@ -15,7 +15,9 @@ namespace Vent
         public int MutatedEntityId { get; set; }
 
         /// <summary>
-        /// Reference to the head version 
+        /// Reference to the head version. We want to be able to change the current
+        /// working version as actions are being undone and redone. This means
+        /// the entity you're holding can change as a result.
         /// </summary>
         public IEntity MutatedEntity { get; set; }
 

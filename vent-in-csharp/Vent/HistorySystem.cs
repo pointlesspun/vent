@@ -54,14 +54,34 @@ namespace Vent
 
         public int OpenGroupCount => _historyData.OpenGroupCount;
 
-        public HistorySystem(EntityRegistry registry)
+        /// <summary>
+        /// Create a history using a registry. This system will add a new EntityHistory
+        /// the registry
+        /// </summary>
+        /// <param name="registry"></param>
+        /// <param name="historyData"></param>
+
+        public HistorySystem(EntityRegistry registry) 
         {
+            Contract.NotNull(registry);
+
             _registry = registry;
             _historyData = registry.Add(new EntityHistory());
         }
 
+        /// <summary>
+        /// Create a history using a registry and history data that is already 
+        /// added to the registry
+        /// </summary>
+        /// <param name="registry"></param>
+        /// <param name="historyData"></param>
+
         public HistorySystem(EntityRegistry registry, EntityHistory historyData)
         {
+            Contract.NotNull(registry);
+            Contract.NotNull(historyData);
+            Contract.Requires<InvalidOperationException>(registry[historyData.Id] != null);
+
             _registry = registry;
             _historyData = historyData;
         }
@@ -490,11 +510,11 @@ namespace Vent
             {
                 if (!_registry.EntitySlots.TryGetValue(versionInfo.HeadId, out headEntity) || headEntity == null)
                 {
-                    // xxx test case with deserialize, mutated entity may be null after a deserialize
-                    // see if this needs to be a resolveEntity instead of this assignment
-                    headEntity = deregisterEntity.MutatedEntity;
+                    // mutated entity may be null after a de/serialize so we need to resolve the entity
+                    // and revert it to the last known version and put it back into the registry
+                    headEntity = ResolveMutatedEntity(deregisterEntity, versionInfo);
                     versionInfo.Revert(headEntity);
-                    _registry.Add(headEntity);
+                    _registry.SetSlot(headEntity.Id, headEntity);
                 }
             }
         }       

@@ -32,7 +32,7 @@ namespace Vent.Test
             var store = RunSmokeTest(1, -1, 42, actionSelection);
 
             Assert.IsTrue(store.MutationCount == 1);
-            Assert.IsTrue(store.Registry.EntitiesInScope == 4);
+            Assert.IsTrue(store.Registry.EntitiesInScope == 5);
         }
 
         /// <summary>
@@ -54,7 +54,7 @@ namespace Vent.Test
             var store = RunSmokeTest(100, -1, 3, actionSelection);
 
             Assert.IsTrue(store.MutationCount == 100);
-            Assert.IsTrue(store.Registry.EntitiesInScope == 400);
+            Assert.IsTrue(store.Registry.EntitiesInScope == 401);
 
             var versionedProperties = store.Registry.Where(kvp => store.HasVersionInfo(kvp.Value) && kvp.Value is PropertyEntity<string>)
                                             .Select(kvp => kvp.Value)
@@ -170,7 +170,7 @@ namespace Vent.Test
                 MaxEntitySlots = maxEntitySlots
             };
 
-            var store = new HistorySystem(registry, new EntityHistory(maxMutations, deleteOutOfScopeVersions));
+            var store = new HistorySystem(registry, registry.Add(new EntityHistory(maxMutations, deleteOutOfScopeVersions)));
             var rng = new Random(seed);
 
            // try
@@ -224,13 +224,11 @@ namespace Vent.Test
             HistorySystem store= null,
             bool spool = false)
         {
-            store ??= new HistorySystem(
-                new EntityRegistry(), 
-                new EntityHistory()
-                {
-                    MaxMutations = maxMutations,
-                }
-            );
+            if (store == null)
+            {
+                var registry = new EntityRegistry();
+                store = new HistorySystem(registry, registry.Add(new EntityHistory(maxMutations: maxMutations)));
+            }
 
             for (var i = 0; i < entityCount; i++)
             {
