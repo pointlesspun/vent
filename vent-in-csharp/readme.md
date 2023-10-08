@@ -414,8 +414,9 @@ To test whether or not the store is near its max entity one should use `EntitySt
 (Potential) List of Things To Do
 ------------------------------
 
-
 * v 0.2.0 Add Json Serialization and Deserialization
+  * Clean up code
+  * Add documentation
 * v 0.3.0 Client / Server Syncing
 * v 0.4.0 Implement a game of Solitaire
 * v 0.5.0 Object pooling

@@ -88,33 +88,6 @@ namespace Vent.ToJson.Readers
             return (T) reader.ReadPrimitive(typeof(T));
         }
 
-        public static T ReadProperty<T>(ref Utf8JsonReader reader, string expectedPropertyName)
-        {
-            if (reader.Read())
-            {
-                if (reader.TokenType == JsonTokenType.PropertyName)
-                {
-                    if (reader.ValueTextEquals(expectedPropertyName))
-                    {
-                        if (reader.Read())
-                        {
-                            return (T)reader.ReadPrimitive(typeof(T));
-                        }
-                    }
-                    else
-                    {
-                        throw new JsonException($"expected  name {expectedPropertyName} but found {reader.GetString()}");
-                    }
-
-                    throw new JsonException($"expected {typeof(T)} but found no more tokens");
-                }
-
-                throw new JsonException($"expected PropertyName but found {reader.TokenType}");
-            }
-
-            throw new JsonException($"expected PropertyName but found no more tokens");
-        }
-
         public delegate void JsonArrayReader(ref Utf8JsonReader reader);
 
 
@@ -129,15 +102,6 @@ namespace Vent.ToJson.Readers
             }
         }
 
-        public static void ReadToken(this ref Utf8JsonReader reader, JsonTokenType expectedToken)
-        {
-            ReadAnyToken(ref reader);
-
-            if (reader.TokenType != expectedToken)
-            {
-                throw new JsonException($"expected {expectedToken} but found {reader.TokenType}.");
-            }
-        }
 
         public static string ReadString(this ref Utf8JsonReader reader)
         {
