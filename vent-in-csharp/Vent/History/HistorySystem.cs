@@ -1,14 +1,16 @@
 ﻿using Microsoft.Win32;
+using Vent.Registry;
+using Vent.Util;
 /// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
 /// (c) Pointlesspun
-namespace Vent
+namespace Vent.History
 {
     /// <summary>
     /// Container for entities representing (a portion) of the application state. 
     /// Entities may have version information associated with them which allows moving the global
     /// application state back in time (undo) or vice versa (redo).
     /// </summary>
-    public class HistorySystem 
+    public class HistorySystem
     {
         /// <summary>
         /// Registry containing all entities including this history
@@ -49,7 +51,7 @@ namespace Vent
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        public bool HasVersionInfo(IEntity entity) => 
+        public bool HasVersionInfo(IEntity entity) =>
             entity != null && _historyData.EntityVersionInfo.ContainsKey(entity.Id);
 
         public int OpenGroupCount => _historyData.OpenGroupCount;
@@ -61,7 +63,7 @@ namespace Vent
         /// <param name="registry"></param>
         /// <param name="historyData"></param>
 
-        public HistorySystem(EntityRegistry registry) 
+        public HistorySystem(EntityRegistry registry)
         {
             Contract.NotNull(registry);
 
@@ -130,7 +132,7 @@ namespace Vent
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        public VersionInfo GetVersionInfo(IEntity entity) => 
+        public VersionInfo GetVersionInfo(IEntity entity) =>
             entity != null ? GetVersionInfo(entity.Id) : null;
 
         /// <summary>
@@ -257,9 +259,9 @@ namespace Vent
         public bool Undo()
         {
             Contract.Requires<InvalidOperationException>(_historyData.OpenGroupCount == 0, $"Cannot undo while there are still open groups {_historyData.OpenGroupCount}");
-            
+
             var groupCount = 0;
-            
+
             do
             {
                 if (_historyData.CurrentMutation >= 0)
@@ -288,7 +290,7 @@ namespace Vent
 
             return _historyData.CurrentMutation >= 0;
         }
-        
+
         /// <summary>
         /// Redo the action of the current mutation, then move on to the next mutation.
         /// </summary>
@@ -331,7 +333,7 @@ namespace Vent
 
         public void DeleteMutation(int index)
         {
-            Contract.Requires<ArgumentException>(index >= 0 && index < _historyData.Mutations.Count, 
+            Contract.Requires<ArgumentException>(index >= 0 && index < _historyData.Mutations.Count,
                 $"DeleteMutation requires a valid index. Index provided is {index}, the index should be between 0 and {_historyData.Mutations.Count}.");
 
             var deletedMutations = 0;
@@ -341,7 +343,7 @@ namespace Vent
                 case BeginMutationGroup _:
                     deletedMutations = DeleteBeginMutationGroup(index);
                     break;
-                    
+
                 case MutateEntity _:
                     DeleteMutateEntityMutation(index);
                     deletedMutations = 1;
@@ -423,7 +425,7 @@ namespace Vent
 
             var mutation = _historyData.Mutations[mutationIndex] as MutateEntity;
             var versionInfo = _historyData.EntityVersionInfo[mutation.MutatedEntityId];
-    
+
             versionInfo.CurrentVersion = -1;
             mutation.MutatedEntity.Id = -1;
 
@@ -450,7 +452,7 @@ namespace Vent
             // entity may have left the scope, create clone a new version
             // this may happen after serialization which doesn't necessarily keep
             // track of the head entities after they left the scope
-            return (IEntity)versionInfo.Versions[0].Clone();           
+            return (IEntity)versionInfo.Versions[0].Clone();
         }
 
         private void AddMutation(IMutation mutation)
@@ -468,7 +470,7 @@ namespace Vent
 
         private void DeleteMutateEntityMutation(int index)
         {
-            var mutation = (MutateEntity) _historyData.Mutations[index];
+            var mutation = (MutateEntity)_historyData.Mutations[index];
 
             var versionInfo = _historyData.EntityVersionInfo[mutation.MutatedEntityId];
 
@@ -488,7 +490,7 @@ namespace Vent
 
                 _registry.Remove(versionInfo.HeadId);
             }
-            
+
             // check if the head entity needs to be added to the registry again
             // only in case the deleted mutation is a deregister and the mutation
             // of that entity before that is a commit
@@ -505,8 +507,8 @@ namespace Vent
                     _registry.SetSlot(headEntity.Id, headEntity);
                 }
             }
-        }       
-        
+        }
+
         private void TryRemoveFutureMutations()
         {
             // are we at the head? if so ignore
@@ -519,7 +521,7 @@ namespace Vent
                 }
 
                 // remove future mutations in the direction from head to tail.
-                for (var i = _historyData.Mutations.Count - 1; i >= _historyData.CurrentMutation; i--)  
+                for (var i = _historyData.Mutations.Count - 1; i >= _historyData.CurrentMutation; i--)
                 {
                     var mutation = _historyData.Mutations[i];
 
@@ -611,7 +613,7 @@ namespace Vent
                 _registry.SetSlot(entity.Id, entity);
             }
         }
-        
+
         // if the current mutation is pointing at a commit
         // and the version is at index 0, the associated 
         // entity will go out of scope and should be removed
@@ -629,7 +631,7 @@ namespace Vent
         /// </summary>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
-        private int UndoMutation(IMutation mutation) 
+        private int UndoMutation(IMutation mutation)
         {
             switch (mutation)
             {
@@ -663,7 +665,7 @@ namespace Vent
 
         private int DeleteBeginMutationGroup(int mutationIndex)
         {
-            Contract.Requires<InvalidOperationException>(!IsGroupOpen(mutationIndex), 
+            Contract.Requires<InvalidOperationException>(!IsGroupOpen(mutationIndex),
                 $"Cannot remove the begin group mutation at index {mutationIndex} while it is still open.");
 
             var groupCount = 0;

@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 
-namespace Vent
+namespace Vent.Util
 {
     public class ContractException : Exception
     {
@@ -37,12 +37,12 @@ namespace Vent
         {
             if (!b)
             {
-                if (message == null) 
+                if (message == null)
                 {
                     throw new T();
                 }
 
-                throw (Exception) Activator.CreateInstance(typeof(T), message);
+                throw (Exception)Activator.CreateInstance(typeof(T), message);
             }
         }
 

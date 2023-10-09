@@ -5,6 +5,8 @@ using System.Runtime.Serialization;
 using System.Text.Encodings.Web;
 using System.Text;
 using System.Text.Json;
+using Vent.Util;
+using Vent.Registry;
 
 namespace Vent.ToJson
 {
@@ -39,11 +41,11 @@ namespace Vent.ToJson
             {
                 var type = value.GetType();
 
-                if (EntityReflection.IsPrimitiveOrString(type))
+                if (Reflection.IsPrimitiveOrString(type))
                 {
                     WritePrimitive(writer, value);
                 }
-                else if (EntityReflection.IsEntity(type) && entitySerialization == EntitySerialization.AsReference)
+                else if (Reflection.IsEntity(type) && entitySerialization == EntitySerialization.AsReference)
                 {
                     writer.WriteNumberValue(((IEntity)value).Id);
                 }
@@ -142,8 +144,8 @@ namespace Vent.ToJson
         public static bool IsValidDictionaryKey(Type keyType)
         {
             return keyType != null
-                && (EntityReflection.IsPrimitiveOrString(keyType)
-                || EntityReflection.IsEntity(keyType)
+                && (Reflection.IsPrimitiveOrString(keyType)
+                || Reflection.IsEntity(keyType)
                 || keyType == typeof(DateTime));
         }
 

@@ -1,4 +1,5 @@
-﻿using Vent.PropertyEntities;
+﻿using Vent.Entities;
+using Vent.Registry;
 
 namespace Vent.Test
 {

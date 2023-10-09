@@ -2,6 +2,9 @@
 /// (c) Pointlesspun
 
 using System.Diagnostics;
+using Vent.Entities;
+using Vent.History;
+using Vent.Registry;
 
 namespace Vent.Test
 {

@@ -1,6 +1,7 @@
 ﻿using System.Collections;
+using Vent.Util;
 
-namespace Vent
+namespace Vent.Registry
 {
     public class EntityRegistry : EntityBase, IEnumerable<KeyValuePair<int, IEntity>>
     {
@@ -28,11 +29,11 @@ namespace Vent
             get => _entityId;
             set => _entityId = value;
         }
-        
-        public string Version 
-        { 
-            get; 
-            set; 
+
+        public string Version
+        {
+            get;
+            set;
         } = "0.2";
 
 
@@ -70,7 +71,7 @@ namespace Vent
         }
 
         public EntityRegistry()
-        { 
+        {
         }
 
         public EntityRegistry(int maxSlots)
@@ -159,7 +160,7 @@ namespace Vent
             Contract.Requires<ArgumentException>(entity != null, "Entity cannot be null.");
             Contract.Requires<ArgumentException>(entity != this, "Cannot register self.");
             Contract.Requires<InvalidOperationException>(!Contains(entity));
-            
+
             if (_entities.TryGetValue(slotId, out var existingEntity))
             {
                 if (existingEntity != null)
@@ -196,7 +197,7 @@ namespace Vent
         public void ClearSlot(int id)
         {
             Contract.Requires<ArgumentException>(id >= 0, $"Cannot remove entity from slot using id {id}.");
-            
+
             if (_entities.TryGetValue(id, out var entity))
             {
                 Contract.Requires<InvalidOperationException>(entity != null, $"Trying to remove entity from slot at {id}, but there was no entity.");
@@ -210,15 +211,15 @@ namespace Vent
             }
         }
 
-        public IEnumerable<T> GetEntitiesOf<T>() where T : class, IEntity => 
+        public IEnumerable<T> GetEntitiesOf<T>() where T : class, IEntity =>
             _entities.Values.Where(e => e is T).Cast<T>();
-        
-        public IEnumerator<KeyValuePair<int, IEntity>> GetEnumerator() => 
+
+        public IEnumerator<KeyValuePair<int, IEntity>> GetEnumerator() =>
             _entities.GetEnumerator();
-        
-        IEnumerator IEnumerable.GetEnumerator() => 
+
+        IEnumerator IEnumerable.GetEnumerator() =>
             _entities.Values.GetEnumerator();
-        
+
         /// <summary>
         /// Checks if this entity object is in this store
         /// </summary>
@@ -229,20 +230,20 @@ namespace Vent
                 && entity.Id >= 0
                 && _entities.TryGetValue(entity.Id, out IEntity other)
                 && other == entity;
-        
-        public bool ContainsKey(int key) => 
+
+        public bool ContainsKey(int key) =>
             _entities.ContainsKey(key);
-        
+
 
         public override object Clone()
         {
-            var result = (EntityRegistry) base.Clone();
+            var result = (EntityRegistry)base.Clone();
 
-            result.EntitySlots = new Dictionary<int, IEntity>(); 
+            result.EntitySlots = new Dictionary<int, IEntity>();
 
-            foreach (var kvp in _entities) 
+            foreach (var kvp in _entities)
             {
-                result.EntitySlots[kvp.Key] = (IEntity) kvp.Value.Clone();
+                result.EntitySlots[kvp.Key] = (IEntity)kvp.Value.Clone();
             }
 
             return result;
@@ -251,7 +252,7 @@ namespace Vent
         public override bool Equals(object obj)
         {
             return obj == this
-                || (obj != null
+                || obj != null
                 && obj is EntityRegistry other
                 && other.Id == Id
                 && other.NextEntityId == NextEntityId
@@ -261,13 +262,13 @@ namespace Vent
                     if (_entities.TryGetValue(kvp.Key, out IEntity thisEntity))
                     {
                         var otherEntity = kvp.Value;
-                        
-                        return (thisEntity == null && otherEntity == null)
-                            || (thisEntity.Equals(otherEntity));
+
+                        return thisEntity == null && otherEntity == null
+                            || thisEntity.Equals(otherEntity);
                     }
 
                     return false;
-                }));
+                });
         }
 
         public override int GetHashCode()

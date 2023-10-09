@@ -1,5 +1,7 @@
 ﻿using System.Collections;
 using System.Text.Json;
+using Vent.Registry;
+using Vent.Util;
 
 namespace Vent.ToJson.Readers
 {
@@ -46,11 +48,11 @@ namespace Vent.ToJson.Readers
             {
                 return null;
             }
-            else if (EntityReflection.IsEntity(valueType))
+            else if (Reflection.IsEntity(valueType))
             {
                 return reader.ReadEntity(context, valueType, entitySerialization);
             }
-            else if (EntityReflection.IsPrimitiveOrString(valueType))
+            else if (Reflection.IsPrimitiveOrString(valueType))
             {
                 return reader.ReadPrimitive(valueType);
             }

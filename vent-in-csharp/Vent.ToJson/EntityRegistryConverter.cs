@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Vent.Registry;
 using Vent.ToJson.Readers;
 
 namespace Vent.ToJson

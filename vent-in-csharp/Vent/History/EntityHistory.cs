@@ -1,4 +1,8 @@
-﻿namespace Vent
+﻿
+using Vent.Registry;
+/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+/// (c) Pointlesspun
+namespace Vent.History
 {
     public class EntityHistory : EntityBase
     {
@@ -18,7 +22,7 @@
         {
             get;
             set;
-        } =  new();
+        } = new();
 
         public int CurrentMutation
         {
@@ -29,11 +33,11 @@
         /// <summary>
         /// Number of begin calls that have not yet got a corresponding end call
         /// </summary>
-        public int OpenGroupCount 
-        { 
-            get; 
-            set; 
-        } 
+        public int OpenGroupCount
+        {
+            get;
+            set;
+        }
 
         /// <summary>
         /// Maximum number of mutations, new mutations will cause the oldest

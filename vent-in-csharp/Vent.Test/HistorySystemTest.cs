@@ -1,13 +1,15 @@
 /// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
 /// (c) Pointlesspun
 
+using Vent.Entities;
+using Vent.History;
+using Vent.Registry;
+
 namespace Vent.Test
 {
     [TestClass]
     public class HistorySystemTest
     {
-
-
         [TestMethod]
         public void RegisterDegisterPropertyEntityTest()
         {

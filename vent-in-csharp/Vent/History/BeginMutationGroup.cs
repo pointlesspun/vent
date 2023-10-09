@@ -1,8 +1,7 @@
-﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+﻿using Vent.Registry;
+/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
 /// (c) Pointlesspun
-
-
-namespace Vent
+namespace Vent.History
 {
     public class BeginMutationGroup : EntityBase, IMutation
     {
@@ -10,9 +9,9 @@ namespace Vent
 
         public BeginMutationGroup() { }
 
-        public BeginMutationGroup(long timeStamp) 
-        { 
-            TimeStamp = timeStamp;  
+        public BeginMutationGroup(long timeStamp)
+        {
+            TimeStamp = timeStamp;
         }
 
 

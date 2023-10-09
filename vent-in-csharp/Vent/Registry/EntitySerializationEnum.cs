@@ -1,6 +1,9 @@
-﻿using System.Reflection;
+﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+/// (c) Pointlesspun
 
-namespace Vent
+using System.Reflection;
+
+namespace Vent.Registry
 {
     public enum EntitySerialization
     {

@@ -1,7 +1,9 @@
-﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+﻿
+using Vent.Registry;
+using Vent.Util;
+/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
 /// (c) Pointlesspun
-
-namespace Vent
+namespace Vent.History
 {
     public class VersionInfo : EntityBase
     {
@@ -84,7 +86,7 @@ namespace Vent
 
         public void RemoveVersion(int index)
         {
-            Contract.Requires(index >= 0 && index <  Versions.Count);
+            Contract.Requires(index >= 0 && index < Versions.Count);
 
             Versions.RemoveAt(index);
 

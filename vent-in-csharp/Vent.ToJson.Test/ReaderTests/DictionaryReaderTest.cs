@@ -1,4 +1,5 @@
-﻿using Vent.ToJson.Readers;
+﻿using Vent.Registry;
+using Vent.ToJson.Readers;
 
 using static Vent.ToJson.Utf8JsonWriterExtensions;
 

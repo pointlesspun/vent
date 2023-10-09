@@ -2,6 +2,8 @@
 using Vent.ToJson.Readers;
 
 using static Vent.ToJson.Utf8JsonWriterExtensions;
+using Vent.Registry;
+
 namespace Vent.ToJson.Test.Readers
 {
     [TestClass]

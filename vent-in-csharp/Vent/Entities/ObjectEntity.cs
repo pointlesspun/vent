@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Vent.PropertyEntities
+﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+/// (c) Pointlesspun
+namespace Vent.Entities
 {
     public class ObjectEntity<T> : PropertyEntity<T> where T : class
     {

@@ -2,8 +2,10 @@
 /// (c) Pointlesspun
 
 using System.Text;
+using Vent.Registry;
+using Vent.Util;
 
-namespace Vent
+namespace Vent.History
 {
     public static class EntityHistoryExtensions
     {
@@ -72,14 +74,14 @@ namespace Vent
         {
             var builder = new StringBuilder();
 
-            
+
             builder.AppendLine($"Mutations: {history.CurrentMutation} / {history.MutationCount}");
 
             var mutations = history.Registry.GetEntitiesOf<CommitEntity>()
-                                    .OrderBy( m => m.TimeStamp)
+                                    .OrderBy(m => m.TimeStamp)
                                     .ToList();
 
-            foreach (var mutation in mutations )
+            foreach (var mutation in mutations)
             {
                 builder.AppendLine(mutation.ToString());
             }
@@ -87,7 +89,7 @@ namespace Vent
             builder.AppendLine($"Entity count: {history.Registry.EntitiesInScope}");
 
             var versionedEntities = history.Registry.Where(kvp => history.HasVersionInfo(kvp.Value))
-                                        .Select( kvp => kvp.Value)
+                                        .Select(kvp => kvp.Value)
                                         .OrderBy(e => e.Id);
 
             if (versionedEntities.Count() > 0)
@@ -110,11 +112,11 @@ namespace Vent
         /// <param name="rng"></param>
         /// <param name="needsVersioning"></param>
         /// <returns></returns>
-        public static T SelectRandomEntity<T>(this HistorySystem store, Random rng, bool needsVersioning = true ) where T : IEntity
+        public static T SelectRandomEntity<T>(this HistorySystem store, Random rng, bool needsVersioning = true) where T : IEntity
         {
             Contract.NotNull(rng);
-            
-            var candidateEntities = store.Registry.Where(e => e.Value is T&& (!needsVersioning || store.GetVersionInfo(e.Value) != null))
+
+            var candidateEntities = store.Registry.Where(e => e.Value is T && (!needsVersioning || store.GetVersionInfo(e.Value) != null))
                                             .Select(kvp => kvp.Value)
                                             .Cast<T>();
 

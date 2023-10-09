@@ -1,4 +1,8 @@
-﻿using Vent.PropertyEntities;
+﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+/// (c) Pointlesspun
+
+using Vent.Entities;
+using Vent.Registry;
 using Vent.ToJson.Test.TestEntities;
 
 namespace Vent.ToJson.Test
@@ -97,7 +101,7 @@ namespace Vent.ToJson.Test
 
             name = typeof(Dictionary<string, StringEntity>).ToVentClassName();
 
-            Assert.IsTrue(name == "System.Collections.Generic.Dictionary<System.String,Vent.PropertyEntities.StringEntity>");
+            Assert.IsTrue(name == "System.Collections.Generic.Dictionary<System.String,Vent.Entities.StringEntity>");
         }
 
         [TestMethod]
@@ -127,7 +131,7 @@ namespace Vent.ToJson.Test
 
             name = typeof(Dictionary<string, StringEntity>).ToVentClassName();
 
-            Assert.IsTrue(name == "System.Collections.Generic.Dictionary<System.String,Vent.PropertyEntities.StringEntity>");
+            Assert.IsTrue(name == "System.Collections.Generic.Dictionary<System.String,Vent.Entities.StringEntity>");
 
             node = VentClassName.ParseVentClassName(name);
             nodeType = node.ResolveType(lookup);

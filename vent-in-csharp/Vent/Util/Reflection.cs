@@ -3,10 +3,11 @@
 
 using System.Collections;
 using System.Reflection;
+using Vent.Registry;
 
-namespace Vent
+namespace Vent.Util
 {
-    public static class EntityReflection
+    public static class Reflection
     {
         public static void CopyPropertiesFrom(this IEntity to, IEntity from)
         {
@@ -28,11 +29,11 @@ namespace Vent
                 if (propB != null && propB.CanWrite)
                 {
                     var valueA = propA.GetValue(from);
-                    
+
                     if (valueA != null)
                     {
-                        var valueACopy = CanDeepCopy(propA, valueA) 
-                                            ? DeepCopyValue(valueA) 
+                        var valueACopy = CanDeepCopy(propA, valueA)
+                                            ? DeepCopyValue(valueA)
                                             : valueA;
 
                         propB.SetValue(to, valueACopy);
@@ -43,13 +44,13 @@ namespace Vent
 
         // https://stackoverflow.com/questions/374651/how-to-check-if-an-object-is-nullable
         public static bool IsNullable<T>(T obj) =>
-            obj == null || IsNullableType(typeof(T));
-        
+            obj == null || typeof(T).IsNullableType();
+
 
         // https://stackoverflow.com/questions/374651/how-to-check-if-an-object-is-nullable
         public static bool IsNullableType(this Type type) =>
-            (!type.IsValueType) || (Nullable.GetUnderlyingType(type) != null);
-        
+            !type.IsValueType || Nullable.GetUnderlyingType(type) != null;
+
         private static bool CanDeepCopy(PropertyInfo info, object value)
             => value != null && !IsEntityOrPrimitiveOrString(info.PropertyType);
 
@@ -150,7 +151,7 @@ namespace Vent
 
                 object keyCopy = canDeepCopyKey ? DeepCopyValue(entry.Key) : entry.Key;
                 object valueCopy = canDeepCopyValue ? DeepCopyValue(entry.Value) : entry.Value;
-                
+
                 copiedDict.Add(keyCopy, valueCopy);
             }
 

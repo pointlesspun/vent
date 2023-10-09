@@ -1,7 +1,7 @@
-﻿
+﻿using Vent.Registry;
 /// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
 /// (c) Pointlesspun
-namespace Vent
+namespace Vent.Entities
 {
     /// <summary>
     /// Entity containing a single property. While not required, it's recommend
@@ -13,7 +13,7 @@ namespace Vent
     {
         public virtual T Value { get; set; }
 
-        public PropertyEntity() 
+        public PropertyEntity()
         {
         }
 
@@ -28,11 +28,11 @@ namespace Vent
             return this;
         }
 
-       
+
 
         public override string ToString()
         {
-            return $"property: {Value}"; 
+            return $"property: {Value}";
         }
 
         public override bool Equals(object obj)

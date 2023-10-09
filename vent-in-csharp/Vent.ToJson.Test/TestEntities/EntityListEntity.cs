@@ -1,4 +1,6 @@
-﻿namespace Vent.ToJson.Test.TestEntities
+﻿using Vent.Registry;
+
+namespace Vent.ToJson.Test.TestEntities
 {
 
     public class EntityListEntity : EntityBase

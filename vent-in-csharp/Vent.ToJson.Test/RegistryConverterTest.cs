@@ -1,7 +1,11 @@
-﻿using System.Collections;
+﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+/// (c) Pointlesspun
+
+using System.Collections;
 using System.Text.Encodings.Web;
 using System.Text.Json;
-using Vent.PropertyEntities;
+using Vent.Entities;
+using Vent.Registry;
 using Vent.ToJson.Test.TestEntities;
 
 namespace Vent.ToJson.Test
