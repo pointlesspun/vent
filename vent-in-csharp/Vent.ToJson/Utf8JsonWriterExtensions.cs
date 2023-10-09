@@ -1,7 +1,8 @@
-﻿using System.Collections;
+﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+/// (c) Pointlesspun
+
+using System.Collections;
 using System.Reflection;
-using System.Reflection.PortableExecutable;
-using System.Runtime.Serialization;
 using System.Text.Encodings.Web;
 using System.Text;
 using System.Text.Json;

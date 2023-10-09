@@ -1,5 +1,5 @@
-﻿using Microsoft.Win32;
-using System.Collections;
+﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+/// (c) Pointlesspun
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Vent.Registry;

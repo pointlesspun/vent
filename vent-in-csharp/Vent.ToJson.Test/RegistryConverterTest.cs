@@ -4,8 +4,10 @@
 using System.Collections;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+
 using Vent.Entities;
 using Vent.Registry;
+
 using Vent.ToJson.Test.TestEntities;
 
 namespace Vent.ToJson.Test

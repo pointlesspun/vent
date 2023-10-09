@@ -1,4 +1,7 @@
-﻿using System.Collections;
+﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+/// (c) Pointlesspun
+
+using System.Collections;
 using System.Text.Json;
 using Vent.Registry;
 using Vent.Util;

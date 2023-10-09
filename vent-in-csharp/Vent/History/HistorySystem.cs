@@ -1,8 +1,9 @@
-﻿using Microsoft.Win32;
+﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+/// (c) Pointlesspun
+/// 
 using Vent.Registry;
 using Vent.Util;
-/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
-/// (c) Pointlesspun
+
 namespace Vent.History
 {
     /// <summary>

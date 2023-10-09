@@ -1,4 +1,7 @@
-﻿using Vent.Registry;
+﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+/// (c) Pointlesspun
+
+using Vent.Registry;
 using Vent.ToJson.Readers;
 
 using static Vent.ToJson.Utf8JsonWriterExtensions;

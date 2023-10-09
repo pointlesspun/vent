@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+/// (c) Pointlesspun
+
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Vent.Registry;
 using Vent.Util;
 

@@ -1,4 +1,7 @@
-﻿namespace Vent.ToJson.Test.TestEntities
+﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+/// (c) Pointlesspun
+
+namespace Vent.ToJson.Test.TestEntities
 {
     /// <summary>
     /// Entity with multiple primitive properties for testing

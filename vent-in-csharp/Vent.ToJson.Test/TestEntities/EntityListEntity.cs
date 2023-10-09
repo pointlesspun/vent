@@ -1,8 +1,10 @@
-﻿using Vent.Registry;
+﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+/// (c) Pointlesspun
+
+using Vent.Registry;
 
 namespace Vent.ToJson.Test.TestEntities
 {
-
     public class EntityListEntity : EntityBase
     {
         public List<IEntity> EntityList

@@ -2,6 +2,7 @@
 /// (c) Pointlesspun
 
 using System.Text;
+
 using Vent.Registry;
 using Vent.Util;
 

@@ -1,4 +1,7 @@
-﻿namespace Vent.ToJson
+﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+/// (c) Pointlesspun
+
+namespace Vent.ToJson
 {
     public static class SharedJsonTags
     {

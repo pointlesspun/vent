@@ -1,4 +1,7 @@
-﻿using Vent.ToJson.Readers;
+﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+/// (c) Pointlesspun
+
+using Vent.ToJson.Readers;
 using Vent.ToJson.Test.TestEntities;
 
 using static Vent.ToJson.Utf8JsonWriterExtensions;
