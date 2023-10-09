@@ -179,6 +179,12 @@ namespace Vent.Registry
             return entity;
         }
 
+        /// <summary>
+        /// Set the slot with the given id to 'null'. If an entity was holding this slot, this will lower the 
+        /// EntitiesInScope by 1 while the EntitySlotCount will remain the same.
+        /// 
+        /// </summary>
+        /// <param name="slotId"></param>
         public void SetSlotToNull(int slotId)
         {
             if (_entities.TryGetValue(slotId, out var existingEntity))

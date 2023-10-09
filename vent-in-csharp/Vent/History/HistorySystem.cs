@@ -89,7 +89,6 @@ namespace Vent.History
             _historyData = historyData;
         }
 
-
         /// <summary>
         /// Deregisters the given entity and sets the id to -1. 
         /// If the entity has version information

@@ -32,7 +32,6 @@ namespace Vent.ToJson
             return classLookup;
         }
 
-
         public static Dictionary<string, Type> WithType(this Dictionary<string, Type> classLookup, Type type)
         {
             classLookup[type.ToVentClassName()] = type;
