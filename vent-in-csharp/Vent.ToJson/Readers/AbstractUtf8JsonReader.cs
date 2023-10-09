@@ -1,6 +1,7 @@
 ﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
 /// (c) Pointlesspun
 
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using Vent.Registry;
@@ -19,7 +20,7 @@ namespace Vent.ToJson.Readers
             var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(jsonText));
 
             // create a new context if none was provided
-            context ??= new JsonReaderContext(new EntityRegistry(), ClassLookup.CreateDefault());
+            context ??= new JsonReaderContext(new EntityRegistry(), ClassLookup.CreateDefault(Assembly.GetCallingAssembly()));
 
             if (reader.TokenType == JsonTokenType.None)
             {

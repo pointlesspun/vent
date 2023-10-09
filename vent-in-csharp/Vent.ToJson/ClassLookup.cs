@@ -38,9 +38,9 @@ namespace Vent.ToJson
             return classLookup;
         }
 
-        public static Dictionary<string, Type> CreateDefault()
+        public static Dictionary<string, Type> CreateDefault(params Assembly[] assemblies)
         {
-            var assemblySet = new HashSet<Assembly>(){
+            var assemblySet = new HashSet<Assembly>(assemblies){
                 Assembly.GetCallingAssembly(),
                 Assembly.GetExecutingAssembly(),
                 typeof(IEntity).Assembly

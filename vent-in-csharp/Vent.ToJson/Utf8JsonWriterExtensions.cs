@@ -13,7 +13,17 @@ namespace Vent.ToJson
 {
     public static class Utf8JsonWriterExtensions
     {
-        // entity list as reference 
+
+        /// <summary>
+        /// Convenience method to make the most often used invocation a little easier to read
+        /// </summary>
+        /// <param name="registry"></param>
+        /// <returns></returns>
+        public static string WriteRegistryToJson(EntityRegistry registry)
+        {
+            return WriteObjectToJsonString(registry, EntitySerialization.AsValue);
+        }
+
         public static string WriteObjectToJsonString(object obj, EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {
             var options = new JsonWriterOptions

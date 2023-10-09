@@ -1,10 +1,51 @@
-﻿using System.Text.Json;
+﻿using System.Reflection;
+using System.Text;
+using System.Text.Json;
 using Vent.Registry;
+using Vent.Util;
 
 namespace Vent.ToJson.Readers
 {
+    /// <summary>
+    /// Read an entity. Note that we
+    /// </summary>
     public class Utf8JsonEntityReader : AbstractUtf8JsonReader<IEntity>
     {
+        /// <summary>
+        /// Convenience method to read a single entity 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="jsonText"></param>
+        /// <param name="context"></param>
+        /// <param name="entitySerialization"></param>
+        /// <returns></returns>
+        public static T ReadEntityFromJson<T>(string jsonText,
+            JsonReaderContext context = null,
+            EntitySerialization entitySerialization = EntitySerialization.AsValue) where T: IEntity
+        {
+            var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(jsonText));
+
+            // create a new context if none was provided
+            context ??= new JsonReaderContext(new EntityRegistry(), ClassLookup.CreateDefault(Assembly.GetCallingAssembly()));
+
+            if (reader.TokenType == JsonTokenType.None)
+            {
+                reader.Read();
+            }
+
+            if (reader.TokenType == JsonTokenType.Null)
+            {
+                if (typeof(T).IsNullableType())
+                {
+                    return default;
+                }
+
+                throw new JsonException($"Encounted a json null token but the corresponding type {typeof(T)} is not nullable.");
+            }
+
+            return (T) Utf8JsonEntityReaderExtensions.ReadEntity(ref reader, context, typeof(T), entitySerialization);
+        }
+
         public override object ReadValue(ref Utf8JsonReader reader,
             JsonReaderContext context,
             EntitySerialization entitySerialization = EntitySerialization.AsReference)
