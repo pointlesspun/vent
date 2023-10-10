@@ -4,7 +4,6 @@ VENT TO JSON
 The Vent To Json project allows for serializing an `entity registry` to json and deserializing a json file to an `entity registry`. For example:
 
 ```csharp
-
     using static Vent.ToJson.Utf8JsonWriterExtensions;
     using static Vent.ToJson.Readers.Utf8JsonEntityReader;
 
@@ -15,7 +14,8 @@ The Vent To Json project allows for serializing an `entity registry` to json and
     {
         new StringEntity("foo"),
         new MultiPropertyTestEntity(true, "foo", 'a', -42, 42, 0.1f, -0.1),
-        new PropertyEntity<int>(42)
+        new PropertyEntity<int>(42),
+        new ObjectWrapperEntity<StringEntity>(new StringEntity("bar"))
     };
 
     // write the object to a json string
@@ -29,14 +29,87 @@ The Vent To Json project allows for serializing an `entity registry` to json and
 
 In most cases this is generally all you will need. However there are a number of implementation details which are good to know when using the vent json serialization which is discussed in the rest of this document.
 
-Supported values
+Supported Types
 ----------------
+
+The Json de/serializing supports public non static properties (fields are not de/serialized) as long as they are part of a limited set of types. The supported types include (in order of deserialization):
+
+* Null
+* Entities if declared in the [Class Lookup](#class-lookup)
+* Primitive or string
+* Array
+* DateTime
+* List
+* Dictionary; keys are limited to strings, primitives and datetime.
+* Object/Struct
 
 The generated Json format
 -------------------------
 
+The generated json for the example above will look like this:
+
+```json
+{
+  "__entityType": "Vent.Registry.EntityRegistry",
+  "EntitySlots": {
+    "0": {
+      "__entityType": "Vent.Entities.StringEntity",
+      "Value": "foo",
+      "Id": 0
+    },
+    "1": {
+      "__entityType": "Vent.ToJson.Test.TestEntities.MultiPropertyTestEntity",
+      "BooleanValue": true,
+      "StringValue": "foo",
+      "CharValue": "a",
+      "IntValue": -42,
+      "UIntValue": 42,
+      "FloatValue": 0.1,
+      "DoubleValue": -0.1,
+      "Id": 1
+    },
+    "2": {
+      "__entityType": "Vent.Entities.PropertyEntity<System.Int32>",
+      "Value": 42,
+      "Id": 2
+    },
+    "3": {
+      "__entityType": "Vent.ToJson.Test.TestEntities.ObjectWrapperEntity<Vent.Entities.StringEntity>",
+      "Value": {
+        "__entityType": "Vent.Entities.StringEntity",
+        "Value": "bar",
+        "Id": -1
+      },
+      "Id": 3
+    }
+  },
+  "MaxEntitySlots": 2147483647,
+  "NextEntityId": 4,
+  "Version": "0.2",
+  "Id": -1
+}
+```
+
+The json for an EntityRegistry is supposed to be straightforward. Each object, including the EntityRegistry itself, will have the following structure:
+
+* If the object is an Entity and it's serialized as a value (see [Entity References](#entity-references)), the first property must have the property name "__entityType" followed by a string containing the class declaration. This class declaration must be part of the [class lookup](#class-lookup).
+
+* If the object is an Entity and serialized as reference (see [Entity References](#entity-references)), it will be represented as a number or a string representing a number. We see this in the keys of the "EntitySlots" property in the EntityRegistry.
+
+* The remainder of the object/entities' public, non static properties of the [supported types](#supported-types) in a key/value format where the key is the property name and the value is the serialized value.
+
 Class Lookup
 ------------
+
+When deserializing json, the deserialization process will create new objects as needed. To provide some bare-bones security, you will need to specify what objects can be created during the deserialization. Types that are allowed need to be added to `ClassLookup`. To make life a little easier the class lookup can be constructed using the following methods:
+
+* Using `ClassLookup.CreateDefault()`, this will create a lookup based on the public, non static types in the calling assembly, executing assembly (which is generally Vent.Json) and the  types in Vent (ie IEntity et al). Furthermore `List<>` and `Dictionary<>` are added.
+* By using `ClassLookup.CreateFrom()` with all the assemblies you want to use for providing the types.
+* By using `ClassLookup.WithType()` to add specific types.
+
+The `ClassLookup` must be added to the `JsonReaderContext` which can be provided to a `JsonReader`. In the example above none if this is used because it's taken care of using the default settings. To use a non default class lookup use the following:
+
+xxx todo 
 
 Entity References
 -----------------

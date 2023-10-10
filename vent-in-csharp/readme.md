@@ -28,7 +28,8 @@ Further reading
 * v 0.2.0 Add Json Serialization and Deserialization
   * Clean up code
   * Add documentation
-* v 0.3.0 Client / Server Syncing
+  * Add tuples
+* v 0.3.0 Registry Synchronization (Client/Server model)
 * v 0.4.0 Implement a game of Solitaire
 * v 0.5.0 Object pooling
 * v 0.6.0 Thread safe versions

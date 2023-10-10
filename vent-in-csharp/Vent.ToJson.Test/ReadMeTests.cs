@@ -18,7 +18,8 @@ namespace Vent.ToJson.Test
             {
                 new StringEntity("foo"),
                 new MultiPropertyTestEntity(true, "foo", 'a', -42, 42, 0.1f, -0.1),
-                new PropertyEntity<int>(42)
+                new PropertyEntity<int>(42),
+                new ObjectWrapperEntity<StringEntity>(new StringEntity("bar"))
             };
 
             // write the object to a jsonstring
