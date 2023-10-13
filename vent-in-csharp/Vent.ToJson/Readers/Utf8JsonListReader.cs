@@ -7,6 +7,10 @@ using Vent.Registry;
 
 namespace Vent.ToJson.Readers
 {
+    /// <summary>
+    /// Reads a json list with elements of T.  
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class Utf8JsonListReader<T> : AbstractUtf8JsonReader<List<T>>
     {
         public override object ReadValue(ref Utf8JsonReader reader,
@@ -17,8 +21,21 @@ namespace Vent.ToJson.Readers
         }
     }
 
+    
     public static class Utf8JsonListReaderExtensions
     {
+        /// <summary>
+        /// Uses the given reader and context to read a list element from the current position
+        /// of the json reader. The current json reader position is expected to be an array
+        /// which will be converted to a list.
+        /// 
+        /// </summary>
+        /// <param name="reader"></param>
+        /// <param name="context"></param>
+        /// <param name="listElementType"></param>
+        /// <param name="entitySerialization"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
         public static IList ReadList(
             this ref Utf8JsonReader reader,
             JsonReaderContext context,
@@ -35,7 +52,7 @@ namespace Vent.ToJson.Readers
                 while (reader.TokenType != JsonTokenType.EndArray)
                 {
                     AddValueToList(context, listValue,
-                        reader.ReadVentValue(listElementType, context, entitySerialization));
+                        reader.ReadValue(listElementType, context, entitySerialization));
 
                     reader.ReadAnyToken();
                 }

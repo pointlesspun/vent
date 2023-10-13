@@ -34,7 +34,7 @@ namespace Vent.ToJson
     
         public override void Write(Utf8JsonWriter writer, EntityRegistry registry, JsonSerializerOptions options)
         {
-            writer.WriteVentObject(registry);
+            writer.WriteObject(registry);
         }
     }
 }

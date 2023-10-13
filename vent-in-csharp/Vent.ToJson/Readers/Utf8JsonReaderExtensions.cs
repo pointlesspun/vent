@@ -14,7 +14,7 @@ namespace Vent.ToJson.Readers
             JsonReaderContext context = null,
             EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {
-            return (T) ReadVentValue(ref reader, typeof(T), context, entitySerialization);  
+            return (T) ReadValue(ref reader, typeof(T), context, entitySerialization);  
         }
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace Vent.ToJson.Readers
         /// from the current parameters.</param>
         /// <returns>The parsed object or null if the current reader value is null</returns>
         /// <exception cref="NotImplementedException"></exception>
-        public static object ReadVentValue(
+        public static object ReadValue(
             this ref Utf8JsonReader reader,
             Type valueType,
             JsonReaderContext context = null,

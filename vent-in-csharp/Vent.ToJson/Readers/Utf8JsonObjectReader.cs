@@ -90,7 +90,7 @@ namespace Vent.ToJson.Readers
                 {
                     reader.ReadAnyToken();
                     {
-                        var value = reader.ReadVentValue(info.PropertyType, context, info.GetEntitySerialization());
+                        var value = reader.ReadValue(info.PropertyType, context, info.GetEntitySerialization());
 
                         if (value is ForwardEntityReference reference)
                         {

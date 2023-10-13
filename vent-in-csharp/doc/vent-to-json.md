@@ -109,14 +109,60 @@ When deserializing json, the deserialization process will create new objects as 
 
 The `ClassLookup` must be added to the `JsonReaderContext` which can be provided to a `JsonReader`. In the example above none if this is used because it's taken care of using the default settings. To use a non default class lookup use the following:
 
-xxx todo 
+```csharp
+      // create a registry with a some random assortments of entities entity
+      var registry = new EntityRegistry()
+      {
+          new StringEntity("foo"),
+          new MultiPropertyTestEntity(true, "foo", 'a', -42, 42, 0.1f, -0.1),
+          new PropertyEntity<int>(42),
+          new ObjectWrapperEntity<StringEntity>(new StringEntity("bar"))
+      };
+
+      // write the object to a jsonstring
+      var jsonString = WriteRegistryToJson(registry);
+
+      // setup the class lookup
+      var classLookup = ClassLookup.CreateFrom(typeof(EntityRegistry),
+                                              typeof(StringEntity), typeof(MultiPropertyTestEntity),
+                                              typeof(PropertyEntity<>), typeof(ObjectWrapperEntity<>),
+                                              typeof(Dictionary<,>));
+
+      var context = new JsonReaderContext(registry, classLookup);
+      var reader = new Utf8JsonEntityReader();
+      var clonedRegistry = reader.ReadFromJson(jsonString, context, EntitySerialization.AsValue);
+
+      Assert.IsTrue(clonedRegistry.Equals(registry));
+```        
+
+If all of that seems like too much work you can simply refer to the assemblies you need and add specific classes if required eg
+
+```csharp
+var classLookup = ClassLookup.CreateFrom(typeof(MultiPropertyTestEntity).Assembly, typeof(StringEntity).Assembly)
+                                 .WithType(typeof(Dictionary<,>))
+                                 .WithType(typeof(List<>));
+```
 
 Entity References
 -----------------
 
+Entities can be de/serialized in two ways: 
+
+* By reference 
+* By value
+
+When the de/serialization encounters an entity (property) it will check the current entity serialization parameter. This parameter can have the value `EntitySerialization.AsReference` or `EntitySerialization.AsValue`. If the value is a `AsReference` the entity's id will be serialized and when deserializing it will try to find the entity by id in the `RegistryContext`'s current Registry. If the value is `AsValue` the entity will be de/serialized as if it was an Object: all properties will be saved as well as its EntityType.
+
+Entity properties of the type `IEntity` are generally saved as reference. However the class can add the `SerializeAsValue` attribute to indicate the specific entity value needs to be de/serialized by value. See `EntityRegistry.EntitySlots` for an example.
+
 Forward References
 ------------------
+
+Vent to Json uses the System.Text.Json json reader, which according to the documentation `"Provides a high-performance API for forward-only, read-only access to the UTF-8 encoded JSON text."`. 
+
 
 Adding more readers writers
 ---------------------------
 
+Custom Serialization
+--------------------

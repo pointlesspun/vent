@@ -39,7 +39,7 @@ namespace Vent.ToJson.Readers
 
                 reader.ReadAnyToken();
                 {
-                    var value = reader.ReadVentValue(valueType, context, entitySerialization);
+                    var value = reader.ReadValue(valueType, context, entitySerialization);
 
                     if (value is ForwardEntityReference reference)
                     {

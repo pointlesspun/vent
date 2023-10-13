@@ -13,6 +13,18 @@ namespace Vent.ToJson
             return CreateFrom((IEnumerable<Assembly>) assemblies);
         }
 
+        public static Dictionary<string, Type> CreateFrom(params Type[] types)
+        {
+            var classLookup = new Dictionary<string, Type>();
+
+            foreach ( var type in types)
+            {
+                classLookup[type.ToVentClassName()] = type;
+            }
+
+            return classLookup;
+        }
+
         public static Dictionary<string, Type> CreateFrom(IEnumerable<Assembly> assemblies)
         {
             var entityType = typeof(IEntity);
