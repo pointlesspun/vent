@@ -158,11 +158,50 @@ Entity properties of the type `IEntity` are generally saved as reference. Howeve
 Forward References
 ------------------
 
-Vent to Json uses the System.Text.Json json reader, which according to the documentation `"Provides a high-performance API for forward-only, read-only access to the UTF-8 encoded JSON text."`. 
+(NOTE: you don't need to know this unless you're delving into the implementation of Vent.ToJson)
 
+Vent to Json uses the System.Text.Json json reader, which according to the documentation `"Provides a high-performance API for forward-only, read-only access to the UTF-8 encoded JSON text."`. This means Vent won't be handed conveniently parsed and structured nuggets of information like newton and has to do some 'heavy' lifting itself. One aspect of this is that when entities are serialized by [reference](#entity-references), the entity itself may not have been parsed yet. Consider the following scenario:
+
+```csharp
+  var ent1 = new SomeEntity();
+  var ent2 = new SomeEntity();
+
+  ent1.entityProperty = ent2;
+  ent2.entityProperty = ent1;
+
+  var registry = new EntityRegistry() { ent1, ent2 };
+```
+
+When this registry gets serialized and then deserialized, it will encounter ent1 and starts deserializing. In ent1 it will encounter `entityProperty` which refers, by reference, to ent2. It will look in the current registry and find no ent2. Moreover since the json library is forward only, ent2 will not exist until later in the deserialization process.
+
+To deal with this situation, the reader generates a placeholder entity of the type `ForwardEntityReference`. This placeholder entity will capture all relevant information. When the entity registry has completed deserialization, it will go through all collected forward references and resolve them accordingly (see `TypeNameNode.ResolveForwardReferences`). 
 
 Adding more readers writers
 ---------------------------
 
-Custom Serialization
---------------------
+At the moment the current implementation does not support adding custom readers or writers. If more custom readers/writers are necessary, you can add them to `Utf8JsonReaderExtensions.ReadValue`.
+
+Custom Entity Serialization
+---------------------------
+
+If the existing set of reading and writing is not sufficient for the a specific entity, you can implement the `ICustomJsonSerializable` interface. This interface comes with two methods `Read` and `Write`. In these methods you will only need to de/serialize the specific properties of this entity. Note that the order in which values are serialized must match the order in which the value were serializard, eg:
+
+```csharp
+public class CustomMultiPropertySerializableTestEntity : MultiPropertyTestEntity, ICustomJsonSerializable
+{
+    public void Read(ref Utf8JsonReader reader, JsonReaderContext _)
+    {
+        Id = reader.ReadPrimitiveProperty<int>(nameof(Id));
+        StringValue = reader.ReadPrimitiveProperty<string>(nameof(StringValue));
+        IntValue = reader.ReadPrimitiveProperty<int>(nameof(IntValue));
+    }
+
+    // we only write some selected properties
+    public void Write(Utf8JsonWriter writer)
+    {
+        writer.WriteProperty(nameof(Id), Id);
+        writer.WriteProperty(nameof(StringValue), StringValue);
+        writer.WriteProperty(nameof(IntValue), IntValue);
+    }
+}
+```
