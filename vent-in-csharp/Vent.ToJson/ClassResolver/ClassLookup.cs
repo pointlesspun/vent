@@ -3,30 +3,54 @@
 
 using System.Reflection;
 using Vent.Registry;
+using Vent.Util;
 
-namespace Vent.ToJson
+namespace Vent.ToJson.ClassResolver
 {
+    /// <summary>
+    /// Methods to create a collection of declared classes from which entities can be deserialized.
+    /// </summary>
     public static class ClassLookup
     {
+        /// <summary>
+        /// Create a classlookup based on the public non static types declared in the given assemblies
+        /// </summary>
+        /// <param name="assemblies"></param>
+        /// <returns>A dictionary with the full class name as key and the associated type as value.</returns>
         public static Dictionary<string, Type> CreateFrom(params Assembly[] assemblies)
         {
-            return CreateFrom((IEnumerable<Assembly>) assemblies);
+            Contract.NotNull(assemblies);
+
+            return CreateFrom((IEnumerable<Assembly>)assemblies);
         }
 
+        /// <summary>
+        /// Create a classlookup based on the given types
+        /// </summary>
+        /// <param name="types"></param>
+        /// <returns>A dictionary with the full class name as key and the associated type as value.</returns>
         public static Dictionary<string, Type> CreateFrom(params Type[] types)
         {
+            Contract.NotNull(types);
+
             var classLookup = new Dictionary<string, Type>();
 
-            foreach ( var type in types)
+            foreach (var type in types)
             {
                 classLookup[type.ToVentClassName()] = type;
             }
 
             return classLookup;
         }
-
+        /// <summary>
+        /// Create a classlookup based on the public non static types declared in the given assemblies
+        /// </summary>
+        /// <param name="assemblies"></param>
+        /// <returns>A dictionary with the full class name as key and the associated type as value.</returns>
         public static Dictionary<string, Type> CreateFrom(IEnumerable<Assembly> assemblies)
         {
+            Contract.NotNull(assemblies);
+
             var entityType = typeof(IEntity);
             var classLookup = new Dictionary<string, Type>();
 
@@ -44,12 +68,24 @@ namespace Vent.ToJson
             return classLookup;
         }
 
+        /// <summary>
+        /// Adds the given type to the classlookup
+        /// </summary>
+        /// <param name="classLookup"></param>
+        /// <param name="type"></param>
+        /// <returns>The parameter classlookup</returns>
         public static Dictionary<string, Type> WithType(this Dictionary<string, Type> classLookup, Type type)
         {
             classLookup[type.ToVentClassName()] = type;
             return classLookup;
         }
 
+        /// <summary>
+        /// Creates a default classlookup from the given assemblies, the calling and executing assembly
+        /// as well as the Vent asembly.
+        /// </summary>
+        /// <param name="assemblies"></param>
+        /// <returns>A dictionary with the full class name as key and the associated type as value.</returns>
         public static Dictionary<string, Type> CreateDefault(params Assembly[] assemblies)
         {
             var assemblySet = new HashSet<Assembly>(assemblies){

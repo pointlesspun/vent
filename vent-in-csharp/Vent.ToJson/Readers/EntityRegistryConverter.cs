@@ -5,10 +5,13 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 using Vent.Registry;
-using Vent.ToJson.Readers;
+using Vent.ToJson.Writers;
 
-namespace Vent.ToJson
+namespace Vent.ToJson.Readers
 {
+    /// <summary>
+    /// Wrapper for the System.Text.Json.JsonConverter for the function reader.ReadEntity
+    /// </summary>
     public class EntityRegistryConverter : JsonConverter<EntityRegistry>
     {
         private readonly Dictionary<string, Type> _classLookup;
@@ -21,17 +24,17 @@ namespace Vent.ToJson
         {
             _classLookup = classLookup;
         }
-                
+
         public override EntityRegistry Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            return (EntityRegistry) reader.ReadEntity(new JsonReaderContext()
+            return (EntityRegistry)reader.ReadEntity(new JsonReaderContext()
             {
                 ClassLookup = _classLookup
-            }, 
+            },
             typeof(EntityRegistry),
             EntitySerialization.AsValue);
         }
-    
+
         public override void Write(Utf8JsonWriter writer, EntityRegistry registry, JsonSerializerOptions options)
         {
             writer.WriteObject(registry);

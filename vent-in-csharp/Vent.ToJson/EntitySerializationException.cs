@@ -3,6 +3,9 @@
 
 namespace Vent.ToJson
 {
+    /// <summary>
+    /// Exception thrown when a de/serialization runs into an exception
+    /// </summary>
     public class EntitySerializationException : Exception
     {
         public EntitySerializationException() { }

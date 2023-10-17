@@ -1,7 +1,7 @@
-﻿/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
+﻿using Vent.ToJson.Readers;
+/// Vent is released under Creative Commons BY-SA see https://creativecommons.org/licenses/by-sa/4.0/
 /// (c) Pointlesspun
-
-namespace Vent.ToJson
+namespace Vent.ToJson.ClassResolver
 {
     public class TypeNameNode
     {
@@ -55,6 +55,6 @@ namespace Vent.ToJson
             }
             // xxx to do add full name
             throw new NotImplementedException($"Cannot find type {TypeName}");
-        }       
+        }
     }
 }

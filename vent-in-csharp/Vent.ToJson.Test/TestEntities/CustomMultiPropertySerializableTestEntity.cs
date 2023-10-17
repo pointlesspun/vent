@@ -4,6 +4,7 @@
 using System.Text.Json;
 
 using Vent.ToJson.Readers;
+using Vent.ToJson.Writers;
 
 namespace Vent.ToJson.Test.TestEntities
 {

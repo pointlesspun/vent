@@ -3,10 +3,11 @@
 
 using Vent.Entities;
 using Vent.Registry;
+using Vent.ToJson.ClassResolver;
 using Vent.ToJson.Readers;
 using Vent.ToJson.Test.TestEntities;
 
-using static Vent.ToJson.Utf8JsonWriterExtensions;
+using static Vent.ToJson.Writers.Utf8JsonWriterExtensions;
 
 namespace Vent.ToJson.Test.Readers
 {

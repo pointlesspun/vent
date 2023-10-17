@@ -2,6 +2,7 @@
 using System.Text;
 using System.Text.Json;
 using Vent.Registry;
+using Vent.ToJson.ClassResolver;
 using Vent.Util;
 
 namespace Vent.ToJson.Readers

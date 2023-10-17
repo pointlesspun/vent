@@ -7,7 +7,8 @@ using System.Text.Json;
 
 using Vent.Entities;
 using Vent.Registry;
-
+using Vent.ToJson.ClassResolver;
+using Vent.ToJson.Readers;
 using Vent.ToJson.Test.TestEntities;
 
 namespace Vent.ToJson.Test

@@ -3,7 +3,7 @@
 
 using System.Text;
 
-namespace Vent.ToJson
+namespace Vent.ToJson.ClassResolver
 {
     public static class VentClassName
     {
@@ -39,7 +39,7 @@ namespace Vent.ToJson
 
         public static object CreateInstance(this string className, Dictionary<string, Type> classLookup)
         {
-            return ParseVentClassName(className).CreateInstance(classLookup);
+            return className.ParseVentClassName().CreateInstance(classLookup);
         }
 
 
@@ -57,7 +57,7 @@ namespace Vent.ToJson
                 return new TypeNameNode(argString.Trim());
             }
 
-            return new TypeNameNode(argString.Substring(0, genericArgsIndex), ParseGenericArgs(argString.Substring(genericArgsIndex)).node);
+            return new TypeNameNode(argString.Substring(0, genericArgsIndex), argString.Substring(genericArgsIndex).ParseGenericArgs().node);
         }
 
         public static (List<TypeNameNode> node, int currentIndex) ParseGenericArgs(this string argString, int index = 0)
@@ -104,7 +104,7 @@ namespace Vent.ToJson
                         {
                             currentNode ??= new TypeNameNode(builder.ToString());
                             builder = null;
-                            var (genericTypes, idx) = ParseGenericArgs(argString, i);
+                            var (genericTypes, idx) = argString.ParseGenericArgs(i);
                             currentNode.GenericTypeNames = genericTypes;
                             i = idx;
                         }

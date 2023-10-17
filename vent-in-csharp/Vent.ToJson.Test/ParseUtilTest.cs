@@ -3,6 +3,7 @@
 
 using Vent.Entities;
 using Vent.Registry;
+using Vent.ToJson.ClassResolver;
 using Vent.ToJson.Test.TestEntities;
 
 namespace Vent.ToJson.Test

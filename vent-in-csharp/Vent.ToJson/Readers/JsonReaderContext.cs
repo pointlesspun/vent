@@ -2,6 +2,7 @@
 /// (c) Pointlesspun
 
 using Vent.Registry;
+using Vent.ToJson.Readers;
 
 namespace Vent.ToJson
 {

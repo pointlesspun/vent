@@ -3,13 +3,16 @@
 
 using System.Collections;
 using System.Reflection;
+
 using System.Text.Encodings.Web;
 using System.Text;
 using System.Text.Json;
+
 using Vent.Util;
 using Vent.Registry;
+using Vent.ToJson.ClassResolver;
 
-namespace Vent.ToJson
+namespace Vent.ToJson.Writers
 {
     public static class Utf8JsonWriterExtensions
     {
@@ -54,7 +57,7 @@ namespace Vent.ToJson
 
                 if (Reflection.IsPrimitiveOrString(type))
                 {
-                    WritePrimitive(writer, value);
+                    writer.WritePrimitive(value);
                 }
                 else if (Reflection.IsEntity(type) && entitySerialization == EntitySerialization.AsReference)
                 {
@@ -62,26 +65,26 @@ namespace Vent.ToJson
                 }
                 else if (type.IsArray)
                 {
-                    WriteArray(writer, (Array)value);
+                    writer.WriteArray((Array)value);
                 }
                 else if (typeof(IEnumerable).IsAssignableFrom(type))
                 {
                     if (typeof(EntityRegistry).IsAssignableFrom(type))
                     {
-                        WriteObject(writer, value);
+                        writer.WriteObject(value);
                     }
-                    else  if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
+                    else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
                     {
-                        WriteList(writer, (IList)value, entitySerialization);
+                        writer.WriteList((IList)value, entitySerialization);
                     }
                     else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>))
                     {
-                        WriteDictionary(writer, (IDictionary)value, entitySerialization);
+                        writer.WriteDictionary((IDictionary)value, entitySerialization);
                     }
                 }
                 else
                 {
-                    WriteObject(writer, value);
+                    writer.WriteObject(value);
                 }
             }
         }
@@ -95,7 +98,7 @@ namespace Vent.ToJson
 
             for (int i = 0; i < array.Length; i++)
             {
-                WriteValue(writer, array.GetValue(i), entitySerialization);
+                writer.WriteValue(array.GetValue(i), entitySerialization);
             }
 
             writer.WriteEndArray();
@@ -110,7 +113,7 @@ namespace Vent.ToJson
 
             foreach (object element in list)
             {
-                WriteValue(writer, element, entitySerialization);
+                writer.WriteValue(element, entitySerialization);
             }
 
             writer.WriteEndArray();
@@ -132,7 +135,7 @@ namespace Vent.ToJson
             foreach (DictionaryEntry entry in dictionary)
             {
                 writer.WritePropertyName(keyConverter(entry.Key));
-                WriteValue(writer, entry.Value, entitySerialization);
+                writer.WriteValue(entry.Value, entitySerialization);
             }
 
             writer.WriteEndObject();
@@ -189,7 +192,7 @@ namespace Vent.ToJson
                             var entitySerialization = propertyInfo.GetEntitySerialization();
 
                             writer.WritePropertyName(propertyInfo.Name);
-                            WriteValue(writer, value, entitySerialization);
+                            writer.WriteValue(value, entitySerialization);
                         }
                     }
                 }
@@ -199,8 +202,8 @@ namespace Vent.ToJson
         }
 
         public static void WriteProperty(
-            this Utf8JsonWriter writer, 
-            string name, 
+            this Utf8JsonWriter writer,
+            string name,
             object value,
             EntitySerialization entitySerialization = EntitySerialization.AsReference)
         {

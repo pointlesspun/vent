@@ -5,7 +5,7 @@ using Vent.Registry;
 using Vent.ToJson.Test.TestEntities;
 using Vent.ToJson.Readers;
 
-using static Vent.ToJson.Utf8JsonWriterExtensions;
+using static Vent.ToJson.Writers.Utf8JsonWriterExtensions;
 
 namespace Vent.ToJson.Test.Readers
 {

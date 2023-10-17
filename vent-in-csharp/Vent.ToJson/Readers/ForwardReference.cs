@@ -5,8 +5,9 @@ using System.Collections;
 using System.Reflection;
 
 using Vent.Registry;
+using Vent.Util;
 
-namespace Vent.ToJson
+namespace Vent.ToJson.Readers
 {
     /// <summary>
     /// Reference to an entity which is may not be present in the owning Registry yet.
@@ -18,10 +19,22 @@ namespace Vent.ToJson
     /// </summary>
     public class ForwardEntityReference : EntityBase
     {
+        /// <summary>
+        /// Registry in which to find the reference
+        /// </summary>
         public EntityRegistry Registry { get; set; }
 
+        /// <summary>
+        /// Id of the entity which needs to be resolved
+        /// </summary>
         public int EntityId { get; set; }
 
+        /// <summary>
+        /// Key used to set the entity reference to the entity. This key depends
+        /// on the entity 'container', aka the target. When the target is a list
+        /// or dictionary the key is an index, if the target is an object, the key
+        /// is a PropertyInfo.
+        /// </summary>
         public object Key { get; set; }
 
         public ForwardEntityReference()
@@ -31,7 +44,7 @@ namespace Vent.ToJson
         public ForwardEntityReference(EntityRegistry registry, int entityKey)
         {
             Registry = registry;
-            EntityId  = entityKey;
+            EntityId = entityKey;
         }
 
         public ForwardEntityReference(EntityRegistry registry, int entityKey, object key)
@@ -41,8 +54,15 @@ namespace Vent.ToJson
             Key = key;
         }
 
+        /// <summary>
+        /// Given a target (an entity 'container'), set the target's entity based on the 
+        /// properties of this ForwardReference
+        /// </summary>
+        /// <param name="target"></param>
         public void ResolveEntity(object target)
         {
+            Contract.NotNull(target);
+
             if (target is IList list)
             {
                 list[(int)Key] = Registry[EntityId];
