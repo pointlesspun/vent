@@ -103,7 +103,7 @@ namespace Vent.ToJson.Readers
                     // are there any references to resolve ?
                     if (context.Top.ForwardReferenceLookup != null)
                     {
-                        TypeNameNode.ResolveForwardReferences(context.TopLookup);
+                        ResolveForwardReferences(context.TopLookup);
                     }
 
                     context.Pop();
@@ -117,6 +117,18 @@ namespace Vent.ToJson.Readers
             }
 
             throw new NotImplementedException($"Cannot parse {reader.TokenType} to an serialization of an entity");
+        }
+
+        private static void ResolveForwardReferences(
+            Dictionary<object, List<ForwardEntityReference>> forwardReferences)
+        {
+            foreach (var forwardReferenceList in forwardReferences)
+            {
+                foreach (var forwardReference in forwardReferenceList.Value)
+                {
+                    forwardReference.ResolveEntity(forwardReferenceList.Key);
+                }
+            }
         }
     }
 }

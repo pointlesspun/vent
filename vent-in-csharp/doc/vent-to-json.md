@@ -205,3 +205,13 @@ public class CustomMultiPropertySerializableTestEntity : MultiPropertyTestEntity
     }
 }
 ```
+
+To do
+-----
+
+The following is a list of potential extensions to this system:
+
+* Currently there is no way to extend the reader other than add to / rewrite the "Utf8JsonReaderExtensions.Readvalue". It'd be nice to create a version which allow for custom configuration, eg use a list of readers which can adjusted as needed.
+* Provide support for read/writing Tuples. 
+* Provide support for read/writing Sets. 
+* Validate Registry version and move version to a meta data dictionary. 
