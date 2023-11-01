@@ -10,17 +10,18 @@ namespace Vent.ToJson
     {
         public Dictionary<string, Type> ClassLookup { get; set; }
 
-        public RegistryContextStack RegistryStack { get; set; } = new RegistryContextStack();
+        //public RegistryContextStack RegistryStack { get; set; } = new RegistryContextStack();
+        public List<RegistryContext> RegistryStack { get; set; } 
 
-        public EntityRegistry TopRegistry => RegistryStack.Top.Registry;
+        public EntityRegistry TopRegistry => RegistryStack[0].Registry;
 
-        public RegistryContext Top => RegistryStack.Top;
+        public RegistryContext Top => RegistryStack[0];
 
-        public Dictionary<object, List<ForwardEntityReference>> TopLookup => RegistryStack.Top.ForwardReferenceLookup;
+        public Dictionary<object, List<ForwardEntityReference>> TopLookup => RegistryStack[0].ForwardReferenceLookup;
 
         public JsonReaderContext() 
         {
-            RegistryStack = new RegistryContextStack();
+            RegistryStack = new List<RegistryContext>();
         }
 
         public JsonReaderContext(Dictionary<string, Type> classLookup)
@@ -35,23 +36,23 @@ namespace Vent.ToJson
 
         public JsonReaderContext(RegistryContext registry, Dictionary<string, Type> classLookup) 
         {
-            RegistryStack = new RegistryContextStack(registry);
+            RegistryStack = new List<RegistryContext>() { registry };
             ClassLookup = classLookup;
         }
 
         public void Push(RegistryContext context)
         {
-            RegistryStack.Push(context);
+            RegistryStack.Insert(0, context);
         }
 
         public void Push(EntityRegistry registry)
         {
-            RegistryStack.Push(new RegistryContext(registry));
+            RegistryStack.Insert(0, new RegistryContext(registry));
         }
 
         public void Pop()
         {
-            RegistryStack.Pop();
+            RegistryStack.RemoveAt(0);
         }
     }
 }
